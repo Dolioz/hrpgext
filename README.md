@@ -5,6 +5,18 @@ Initially created by ApDea and now forked to continue developement.
 
 ## Changelog
 
+### v1.7.1
+
+[Features]
+- Added rift soon warning [RS] in the document title, when a rift is about to open in 5 minutes
+
+[Bugfixing]
+- Fixed DH status minute + 1 bug
+- Fixed display of the script version
+
+[Polishing]
+- Further reformatting
+
 ### v1.7
 
 [Features] 

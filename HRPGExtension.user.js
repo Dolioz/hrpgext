@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         HeroesRPG Extension
 // @namespace    https://github.com/dolioz/hrpgext
-// @version      170
+// @version      171
 // @description  Improves UI, does not automate gameplay
 // @downloadURL  https://github.com/Dolioz/hrpgext/raw/master/HRPGExtension.user.js
 // @match        http://www.heroesrpg.com/*
@@ -15,7 +15,7 @@
 
 // DISCLAIMER: CHANGING THIS SCRIPT TO AUTOMATE GAMEPLAY IS AGAINST THE RULES
 
-let notifSound, cheerfulSound, eerieSound, username, version, lastVersion, readableVersion
+let notifSound, cheerfulSound, eerieSound, username, version, readableVersion
 let lastChatRow = 0, lastLogRow = 0, isFirstChatMutation = true
 let clanMemberCache, equipmentCache, equipmentSlots
 let dhInterval = null, boostTime = { double: 0, haste: 0 }
@@ -79,14 +79,13 @@ let settings = null, defaultSettings = {
 
 (async function () {
     //Init
-    if (document.getElementById('login-box') !== null) {
-        //You need to login first
-        return
-    } else if (document.getElementById('main-stats') === null) {
-        //Game window not found
-        return
-    }
+    if (document.getElementById('login-box') !== null)
+        return //You need to login first
 
+    if (document.getElementById('main-stats') === null)
+        return //Game window not found
+
+    version = parseInt(GM.info.script.version)
     //Convert integer version into floating point 121 -> 1.21 and remove 1 trailing zero 120 -> 1.2
     let fixed = version % 10 === 0 ? 1 : 2
     readableVersion = (version / 100).toFixed(fixed)
@@ -146,8 +145,6 @@ let settings = null, defaultSettings = {
         if (select !== null) {
             select.selectedIndex = 2
             unsafeWindow.centerSelect()
-            //let action = await GM.getValue('HExt_startupAction', 1)
-            //gather_select  gatherSelect()
         }
     }
 
@@ -173,6 +170,7 @@ let settings = null, defaultSettings = {
 
     //Add extra stats into the left menu
     let table = document.querySelector('#main-stats tbody')
+
     //Double and haste timer
     let dhTimeTr = document.createElement('tr')
     dhTimeTr.id = "dhtimerow"
@@ -190,18 +188,15 @@ let settings = null, defaultSettings = {
             tr.innerHTML = '<td></td><td class="greytext"><span>[<a href="javascript:questReroll(1)">Re-roll</a>] [<a href="javascript:questReduce(1)">Reduce</a>]</span></td>'
             tr.style.display = settings.quickQuest ? 'table-row' : 'none'
             row.parentNode.insertBefore(tr, row.nextElementSibling)
-        }
-        else if (row.textContent.indexOf('Gather:') === 0) {
+        } else if (row.textContent.indexOf('Gather:') === 0) {
             let tr = document.createElement('tr')
             tr.className = "left-quest-action"
             tr.innerHTML = '<td></td><td class="greytext"><span>[<a href="javascript:questReroll(2)">Re-roll</a>] [<a href="javascript:questReduce(2)">Reduce</a>]</span></td>'
             tr.style.display = settings.quickQuest ? 'table-row' : 'none'
             row.parentNode.insertBefore(tr, row.nextElementSibling)
-        }
-        else if (row.textContent.indexOf('Financial') === 0) {
+        } else if (row.textContent.indexOf('Financial') === 0) {
             financialHeaderRow = row
-        }
-        else if (row.textContent.indexOf('Quest') === 0) {
+        } else if (row.textContent.indexOf('Quest') === 0) {
             questHeaderRow = row
         }
     }
@@ -256,9 +251,12 @@ let settings = null, defaultSettings = {
 
     //Wait a sec for chat to be ready, just to be sure...
     setTimeout(function () {
-        if (settings.dhTimer) sendCommand('dh')
-        if (settings.showPower || settings.attrBoost) sendCommand('stats')
-        if (settings.showQP) unsafeWindow.updateQuestPoints()
+        if (settings.dhTimer)
+            sendCommand('dh')
+        if (settings.showPower || settings.attrBoost)
+            sendCommand('stats')
+        if (settings.showQP)
+            unsafeWindow.updateQuestPoints()
     }, 200)
 
     //Increase chat row limit
@@ -272,7 +270,8 @@ let settings = null, defaultSettings = {
     if (chatRows.length > 0) {
         processChatRows(chatRows)
         lastChatRow = parseInt(chatRows[0].id.substring(6)) //Mark the first row as the last checked row
-        if (isFirstChatMutation) isFirstChatMutation = false //Avoid notifications on first load
+        if (isFirstChatMutation)
+            isFirstChatMutation = false //Avoid notifications on first load
     }
 
     //Set up skill tier comparsion
@@ -284,7 +283,7 @@ let settings = null, defaultSettings = {
     }
 
     //Observe changes on page
-    MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
+    MutationObserver = window.MutationObserver || window.WebKitMutationObserver
     let observer = new MutationObserver(function (mutations, observer) {
         for (let i = 0, mutation; mutation = mutations[i]; i++) {
             //Ignore mutations when we are editing elements
@@ -311,15 +310,18 @@ let settings = null, defaultSettings = {
                         let logRows = document.querySelectorAll('#chat_table10 tr')
                         for (let j = 0, row; row = logRows[j]; j++) {
                             let currentRow = parseInt(row.id.substring(7))
-                            if (currentRow <= lastLogRow) continue;
+                            if (currentRow <= lastLogRow)
+                                continue
 
                             //Prepare message by removing timestamp for better text processing
                             let message = row.textContent.substring(11)
 
                             //Detect quest completion
                             if (message.match(/You have completed your (.+) quest/)) {
-                                if (settings.notifyQuest) notify(message)
-                                if (settings.showQP) unsafeWindow.updateQuestPoints()
+                                if (settings.notifyQuest)
+                                    notify(message)
+                                if (settings.showQP)
+                                    unsafeWindow.updateQuestPoints()
                             }
 
                             //Detect item sales
@@ -348,7 +350,8 @@ let settings = null, defaultSettings = {
                                 function (match, g1, g2, g3, g4) {
                                     //Check if url ends with quotes, then it's probably somewhere in html
                                     //Could use negative lookbehind but it doesn't work in ES6 yet
-                                    if (g4 !== '') return match
+                                    if (g4 !== '')
+                                        return match
 
                                     let url = match
                                     if (!match.match(/^http/i))
@@ -361,7 +364,7 @@ let settings = null, defaultSettings = {
                         let clanSummary = mutation.target.querySelector('a[href="javascript:clanMenu(\'summary\')"]')
                         if (settings.showClanProfile && clanSummary) {
                             let clanProfile = document.createElement('a')
-                            clanProfile.href = "javascript:viewClanProfile()";
+                            clanProfile.href = "javascript:viewClanProfile()"
                             clanProfile.textContent = "Public profile"
                             clanSummary.parentElement.insertBefore(clanProfile, clanSummary)
                             clanSummary.parentElement.insertBefore(document.createElement('br'), clanSummary)
@@ -381,7 +384,8 @@ let settings = null, defaultSettings = {
                     }
                     if (mutation.target.id === "equipment-popup-content") {
                         //If popup content has been cleared don't do nothing and wait for the next mutation
-                        if (mutation.target.innerHTML === "") return;
+                        if (mutation.target.innerHTML === "")
+                            return
 
                         mutation.startEdit()
                         mutation.target.innerHTML = addGemInfo(mutation.target.innerHTML)
@@ -443,7 +447,8 @@ let settings = null, defaultSettings = {
 
                         //Fix duplicate id bug
                         let gemList = mutation.target.querySelector('#gemid')
-                        if (gemList !== null) gemList.id = 'maingemid'
+                        if (gemList !== null)
+                            gemList.id = 'maingemid'
 
                         //Jewelcrafting gem colors
                         addGemDropdownColorClass('maingemid')
@@ -451,13 +456,12 @@ let settings = null, defaultSettings = {
                         //Check for crafting completions
                         if (settings.notifyCrafting) {
                             if (text.indexOf("is toughened to level") !== -1 || text.indexOf("is sharpened to level") !== -1)
-                                notify("Crafting to the next level was successful!", "cheerful");
+                                notify("Crafting to the next level was successful!", "cheerful")
                             if (text.indexOf("You have run out of") != -1)
-                                notify("You have run out of material!");
+                                notify("You have run out of material!")
                         }
                     }
                 } else {
-                    //console.log("were being edited", mutation.target)
                     mutation.endEdit()
                 }
             } catch (err) {
@@ -504,7 +508,6 @@ async function prepareSettings() {
     notifMenu.appendChild(createCheckbox("notifySales", "Notify items sold on market", "setting"))
     settingsContainer.appendChild(notifMenu)
 
-
     let chatMenu = document.createElement('div')
     chatMenu.className = "settings table-style col-4"
     let chatHeader = document.createElement("div")
@@ -516,15 +519,14 @@ async function prepareSettings() {
     chatMenu.appendChild(createCheckbox("markGlobalsRead", "Exclude most globals from unread count", "setting g-green"))
     chatMenu.appendChild(document.createElement('br'))
     chatMenu.appendChild(createCheckbox("clanChannel", "Separate clan channel", "setting yellow", changeChannelVisibility.bind(null, 'chat2', 'clanChannel')))
-    chatMenu.appendChild(createCheckbox("clanHide", "Hide clan messages from main channel", "setting yellow", refreshChatVisibility));
+    chatMenu.appendChild(createCheckbox("clanHide", "Hide clan messages from main channel", "setting yellow", refreshChatVisibility))
     chatMenu.appendChild(document.createElement('br'))
     chatMenu.appendChild(createCheckbox("usernameClick", "View user profile with right click", "setting l-blue"))
     chatMenu.appendChild(createCheckbox("urlToLink", "Turn URLs into clickable links", "setting l-blue"))
     chatMenu.appendChild(createCheckbox("clickableForum", "Turn URLs into links in forum", "setting l-blue"))
     chatMenu.appendChild(document.createElement('br'))
-    chatMenu.appendChild(createCheckbox("increaseChat", "Increase chat size limit to 300", "setting", chnageChatSizeLimit));
+    chatMenu.appendChild(createCheckbox("increaseChat", "Increase chat size limit to 300", "setting", chnageChatSizeLimit))
     settingsContainer.appendChild(chatMenu)
-
 
     let otherMenu = document.createElement('div')
     otherMenu.className = "settings table-style col-4"
@@ -561,9 +563,11 @@ async function prepareSettings() {
 MutationRecord.prototype.isBeingEdited = function () {
     return (typeof this.target.dataset.editing !== "undefined")
 }
+
 MutationRecord.prototype.startEdit = function () {
     this.target.dataset.editing = true
 }
+
 MutationRecord.prototype.endEdit = function () {
     delete this.target.dataset.editing
 }
@@ -571,16 +575,17 @@ MutationRecord.prototype.endEdit = function () {
 function refreshChatVisibility() {
     let chatRows = document.querySelectorAll('#chat_table1 > tbody > tr')
     for (let i = 0, row; row = chatRows[i]; i++) {
-        if (row.dataset.isOtherGlobal) row.style.display = settings.hideOthersGlobal ? 'none' : 'table-row'
-        if (row.dataset.isClan) row.style.display = settings.clanHide ? 'none' : 'table-row'
+        if (row.dataset.isOtherGlobal)
+            row.style.display = settings.hideOthersGlobal ? 'none' : 'table-row'
+        if (row.dataset.isClan)
+            row.style.display = settings.clanHide ? 'none' : 'table-row'
     }
 }
 
 function changeChannelVisibility(channelId, settingName) {
     let clanChatButton = document.querySelector("[data-channel='" + channelId + "']")
-    if (clanChatButton !== null) {
+    if (clanChatButton !== null)
         clanChatButton.style.display = settings[settingName] ? 'inline-block' : 'none'
-    }
 }
 
 function changeQuickQuestVisibility() {
@@ -617,7 +622,8 @@ function changeDHTimerSetting() {
         if (settings.dhTimer) {
             sendCommand('dh')
         } else {
-            if (dhInterval !== null) clearInterval(dhInterval)
+            if (dhInterval !== null)
+                clearInterval(dhInterval)
             dhInterval = null
         }
     }
@@ -633,7 +639,8 @@ function prepareClanChannel() {
     input.autocomplete = false
     input.type = "text"
     input.addEventListener("keyup", function (e) {
-        if (e.keyCode === 13) sendClanMessage()
+        if (e.keyCode === 13)
+            sendClanMessage()
     })
 
     button.type = "button"
@@ -650,9 +657,8 @@ function prepareClanChannel() {
     clanChatContainer.appendChild(clanChat)
     if (!settings.clanChannel) {
         let clanChatButton = document.querySelector("[data-channel='chat2']")
-        if (clanChatButton !== null) {
+        if (clanChatButton !== null)
             clanChatButton.style.display = "none"
-        }
     }
 }
 
@@ -675,16 +681,15 @@ function sendClanMessage() {
 function processChatRows(chatRows) {
     for (let j = chatRows.length - 1, row; row = chatRows[j]; j--) {
         //Stop after we are reached to previously checked messages, no need for double check
-        //console.log("checking row", row, lastChatRow)
-        //let o = 0
-        //console.log(o++)
         let currentRow = parseInt(row.id.substring(6))
-        if (currentRow <= lastChatRow) continue;
+        if (currentRow <= lastChatRow)
+            continue
 
         //Prepare message by removing timestamp for better text processing
         let message = row.textContent.substring(11)
         let rowNodes = row.childNodes[0].childNodes
         let hasClanColor = false, hasTradeColor = false, hasPrivateColor = false, hasCommandColor = false
+
         //Detect if message part is colored, needed if someone writes keywords like [Clan] in normal channel
         let lastNode = rowNodes[rowNodes.length - 1]
         if (typeof lastNode.style !== "undefined") {
@@ -708,7 +713,8 @@ function processChatRows(chatRows) {
                 function (match, g1, g2, g3, g4) {
                     //Check if url ends with quotes, then it's probably somewhere in html
                     //Could use negative lookbehind but it doesn't work in ES6 yet
-                    if (g4 !== '') return match
+                    if (g4 !== '')
+                        return match
 
                     let url = match
                     if (!match.match(/^http/i))
@@ -755,25 +761,28 @@ function processChatRows(chatRows) {
                 //Exclude globals from unread count on Chat channel tab
                 if ((settings.markGlobalsRead || settings.hideOthersGlobal)) {
                     unsafeWindow.chatcount1--
-                    if (unsafeWindow.chatcount1 < 0) unsafeWindow.chatcount1 = 0
+                    if (unsafeWindow.chatcount1 < 0)
+                        unsafeWindow.chatcount1 = 0
                     document.getElementById('chatcount1').textContent = (unsafeWindow.chatcount1 !== 0 ? " (" + unsafeWindow.chatcount1 + ")" : "")
                 }
 
                 //Maybe it's a Rift :O
                 if (message.match(/^Global: A Rift will open in 5 minutes!/g)) {
                     if (settings.notifRift && !isFirstChatMutation)
-                        notify(message, "eerie");
-                    riftActive = true;
+                        notify(message, "eerie")
+                    riftSoon = true
                 }
 
-                if (message.match(/^Global: A Rift has opened!/g)) {
+                if (message.match(/^Global: (.*) Rift has opened!/g)) {
                     if (settings.notifRift && !isFirstChatMutation)
-                        notify(message, "eerie");
-                    riftActive = true;
+                        notify(message, "eerie")
+                    riftSoon = false
+                    riftActive = true
                 }
 
                 if (message.match(/^Global: (.+) has closed with a Riftscore multiplier/g)) {
-                    riftActive = false;
+                    riftSoon = false
+                    riftActive = false
                 }
 
                 //Shorten rift kill message
@@ -786,7 +795,8 @@ function processChatRows(chatRows) {
                 }
 
                 //Do we need to update inner dh timer?
-                if (settings.dhTimer && message.match(/Global: Everyone will receive (Double Haste|Double|Haste)/i)) sendCommand('dh')
+                if (settings.dhTimer && message.match(/Global: Everyone will receive (Double Haste|Double|Haste)/i))
+                    sendCommand('dh')
             }
         }
 
@@ -797,7 +807,8 @@ function processChatRows(chatRows) {
                 notify(message)
 
             //Do we need to update inner dh timer?
-            if (settings.dhTimer && message.match(/Clan Global: Your Clan has activated /)) sendCommand('dh')
+            if (settings.dhTimer && message.match(/Clan Global: Your Clan has activated /))
+                sendCommand('dh')
 
             //Add copy to clan tab
             let clone = row.cloneNode(true)
@@ -812,12 +823,14 @@ function processChatRows(chatRows) {
             }
 
             //Hide from main chat
-            if (settings.clanHide) row.style.display = "none"
+            if (settings.clanHide)
+                row.style.display = "none"
 
             //Decrease main channel messages count when clan channel is turned on
             if (settings.clanChannel) {
                 unsafeWindow.chatcount1--
-                if (unsafeWindow.chatcount1 < 0) unsafeWindow.chatcount1 = 0
+                if (unsafeWindow.chatcount1 < 0)
+                    unsafeWindow.chatcount1 = 0
                 document.getElementById('chatcount1').textContent = (unsafeWindow.chatcount1 !== 0 ? " (" + unsafeWindow.chatcount1 + ")" : "")
             }
         }
@@ -836,6 +849,7 @@ function processChatRows(chatRows) {
             let clone = row.cloneNode(true)
             clone.id = "ct2_tr" + clone.id.substring(6)
             clanChat.insertBefore(clone, clanChat.firstChild)
+
             //Open clan member profile when click on username in clan tab
             let cloneLink = clone.querySelector('a')
             if (cloneLink !== null) {
@@ -858,38 +872,40 @@ function processChatRows(chatRows) {
             }
 
             //Hide from main chat
-            if (settings.clanHide) row.style.display = "none"
+            if (settings.clanHide)
+                row.style.display = "none"
 
             //Decrease main channel messages count when clan channel is turned on
             if (settings.clanChannel) {
                 unsafeWindow.chatcount1--
-                if (unsafeWindow.chatcount1 < 0) unsafeWindow.chatcount1 = 0
+                if (unsafeWindow.chatcount1 < 0)
+                    unsafeWindow.chatcount1 = 0
                 document.getElementById('chatcount1').textContent = (unsafeWindow.chatcount1 !== 0 ? " (" + unsafeWindow.chatcount1 + ")" : "")
             }
         }
 
         //Do we need to update inner dh timer?
-        if (settings.dhTimer && message.match(/of personal Double Haste./)) sendCommand('dh')
+        if (settings.dhTimer && message.match(/of personal Double Haste./))
+            sendCommand('dh')
 
         //Find /dh command result in chat, parse and then hide it
         if (hasCommandColor && (message.match(/(Double|Haste) is running for another (.+)!/) || message.match(/(Double|Haste) is not currently running./))) {
-            //Double is running for another 2 Hours 27 Minutes 58 Seconds!Haste is running for another 2 Hours 27 Minutes 58 Seconds!
-            //Double is not currently running.Haste is not currently running.
+            //Double is running for another 2 Hours 27 Minutes 58 Seconds!
+            //Haste is running for another 2 Hours 27 Minutes 58 Seconds!
+            //Double is not currently running.
+            //Haste is not currently running.
             boostTime.double = 0
             boostTime.haste = 0
             let outerRegex = /(Double|Haste) is running for another ([^.!]+)[.!]/g
             let outerMatch = null
             while ((outerMatch = outerRegex.exec(message)) !== null) {
-                //console.log("outerMatch", outerMatch)
                 let boostName = outerMatch[1].toLowerCase()
                 let timePart = outerMatch[2]
                 let regex = /(\d+) (Day|Hour|Minute|Second)s?/gi
                 let match = null
                 while ((match = regex.exec(timePart)) !== null) {
-                    //console.log("innerMatch", match)
                     let timeAmount = parseInt(match[1])
                     let timeUnit = match[2].toLowerCase()
-                    //console.log(timeAmount, timeUnit)
                     switch (timeUnit) {
                         case 'day': boostTime[boostName] += timeAmount * 86400; break
                         case 'hour': boostTime[boostName] += timeAmount * 3600; break
@@ -899,20 +915,24 @@ function processChatRows(chatRows) {
                 }
             }
             if (settings.dhTimer) {
-                if (dhInterval !== null) clearInterval(dhInterval)
+                if (dhInterval !== null)
+                    clearInterval(dhInterval)
                 dhInterval = setInterval(updateDHTimer, 10000)
             }
+
             updateDHTimer(true)
 
             //Hide chat row caused by our dh query
             if (unsafeWindow.cmdFlags.dh || isFirstChatMutation) {
-                if (!isFirstChatMutation) unsafeWindow.cmdFlags.dh = false
+                if (!isFirstChatMutation)
+                    unsafeWindow.cmdFlags.dh = false
 
                 row.dataset.internalCommand = "true"
                 row.style.display = "none"
 
                 unsafeWindow.chatcount1--
-                if (unsafeWindow.chatcount1 < 0) unsafeWindow.chatcount1 = 0
+                if (unsafeWindow.chatcount1 < 0)
+                    unsafeWindow.chatcount1 = 0
                 document.getElementById('chatcount1').textContent = (unsafeWindow.chatcount1 !== 0 ? " (" + unsafeWindow.chatcount1 + ")" : "")
             }
         }
@@ -930,17 +950,19 @@ function processChatRows(chatRows) {
                         if (baseAttrElement) {
                             let baseAttr = baseAttrElement.textContent.toInt()
                             let boostAttrElement = document.getElementById("ext_" + attr + "_boost")
-                            if (boostAttrElement) {
+                            if (boostAttrElement)
                                 boostAttrElement.textContent = "+" + (stats[ai + 1].toInt() - baseAttr).thousandSeparate()
-                            }
                         }
                     }
                 }
+
                 if (settings.showPower) {
                     let power = document.getElementById('ext_a_power')
                     let armor = document.getElementById('ext_a_armor')
-                    if (power) power.textContent = stats[4]
-                    if (armor) armor.textContent = stats[5]
+                    if (power)
+                        power.textContent = stats[4]
+                    if (armor)
+                        armor.textContent = stats[5]
                 }
 
                 if (unsafeWindow.cmdFlags.stats) {
@@ -955,7 +977,8 @@ function processChatRows(chatRows) {
                 row.style.display = "none"
 
                 unsafeWindow.chatcount1--
-                if (unsafeWindow.chatcount1 < 0) unsafeWindow.chatcount1 = 0
+                if (unsafeWindow.chatcount1 < 0)
+                    unsafeWindow.chatcount1 = 0
                 document.getElementById('chatcount1').textContent = (unsafeWindow.chatcount1 !== 0 ? " (" + unsafeWindow.chatcount1 + ")" : "")
             }
         }
@@ -977,9 +1000,9 @@ function processChatRows(chatRows) {
                 }
             }
         }
-        //console.log("end checking row")
     }
 }
+
 
 function prepareEquipment() {
     if (equipmentCache.length !== 8) {
@@ -1022,13 +1045,16 @@ function updateDHTimer(keepTime) {
     } else if (boostTime.haste > 0) {
         totalSeconds = boostTime.haste
         message = "Haste is running for "
-        if (decreaseTime) boostTime.haste -= 10
+        if (decreaseTime)
+			boostTime.haste -= 10
     } else if (boostTime.double > 0) {
         totalSeconds = boostTime.double
         message = "Double is running for "
-        if (decreaseTime) boostTime.double -= 10
+        if (decreaseTime)
+			boostTime.double -= 10
     } else {
-        if (dhInterval !== null) clearInterval(dhInterval)
+        if (dhInterval !== null)
+			clearInterval(dhInterval)
         dhInterval = null
     }
 
@@ -1039,21 +1065,20 @@ function updateDHTimer(keepTime) {
         let hours = Math.floor(totalSeconds / 3600)
         totalSeconds %= 3600
         let minutes = Math.floor(totalSeconds / 60)
-        //seconds = totalSeconds % 60;
 
         if (days === 0) {
-            if (hours === 0) {
-                timeStr = minutes === 0 ? "1m" : (minutes + 1) + "m"
-            } else {
+            if (hours === 0)
+                timeStr = minutes === 0 ? "1m" : minutes + "m"
+            else
                 timeStr = hours + "h " + minutes + "m"
-            }
         } else {
             timeStr = days + "d " + hours + "h"
         }
     }
 
     let dhTimeTd = document.getElementById('dhtime')
-    if (dhTimeTd !== null) dhTimeTd.innerHTML = message + timeStr
+    if (dhTimeTd !== null)
+        dhTimeTd.innerHTML = message + timeStr
 }
 
 function sendCommand(command) {
@@ -1061,42 +1086,43 @@ function sendCommand(command) {
 }
 
 function gemInfo(gemName, prepend) {
-    if (typeof prepend === 'undefined') prepend = true;
+    if (typeof prepend === 'undefined')
+        prepend = true
 
-    var words = gemName.split(' ');
-    var result = "";
+    var words = gemName.split(' ')
+    var result = ""
     switch (words[1]) {
-        case "Ruby": result = " (Exp "; break;
-        case "Emerald": result = " (Gold "; break;
-        case "Diamond": result = " (Attr "; break;
-        case "Sapphire": result = " (Battl SP "; break;
-        case "Amethyst": result = " (TS Exp "; break;
-        default: break;
+        case "Ruby": result = " (Exp "; break
+        case "Emerald": result = " (Gold "; break
+        case "Diamond": result = " (Attr "; break
+        case "Sapphire": result = " (Battl SP "; break
+        case "Amethyst": result = " (TS Exp "; break
+        default: break
     }
     switch (words[0]) {
-        case "Fractured": result += "0.5%)"; break;
-        case "Chipped": result += "1%)"; break;
-        case "Dull": result += "1.5%)"; break;
-        case "Clouded": result += "2%)"; break;
-        case "Bright": result += "2.5%)"; break;
-        case "Glowing": result += "3%)"; break;
-        case "Radiant": result += "4%)"; break;
-        case "Flawless": result += "5%)"; break;
-        case "Perfect": result += "7.5%)"; break;
-        case "Priceless": result += "10%)"; break;
-        default: break;
+        case "Fractured": result += "0.5%)"; break
+        case "Chipped": result += "1%)"; break
+        case "Dull": result += "1.5%)"; break
+        case "Clouded": result += "2%)"; break
+        case "Bright": result += "2.5%)"; break
+        case "Glowing": result += "3%)"; break
+        case "Radiant": result += "4%)"; break
+        case "Flawless": result += "5%)"; break
+        case "Perfect": result += "7.5%)"; break
+        case "Priceless": result += "10%)"; break
+        default: break
     }
 
     if (prepend) {
         let color = gemColor(gemName)
-        return '<small class="xx-small ' + color + '">' + gemName + result + '</small>';
+        return '<small class="xx-small ' + color + '">' + gemName + result + '</small>'
     } else {
-        return result;
+        return result
     }
 }
 
 function gemColor(gemName) {
-    var words = gemName.split(' ');
+    var words = gemName.split(' ')
     switch (words[1]) {
         case "Ruby": return "red"
         case "Emerald": return "g-green"
@@ -1108,7 +1134,7 @@ function gemColor(gemName) {
 }
 
 function addGemInfo(string) {
-    return string.replace(/(Fractured|Chipped|Dull|Clouded|Bright|Glowing|Radiant|Flawless|Perfect|Priceless) (Ruby|Emerald|Diamond|Sapphire|Amethyst)(?! \()/g, function (x) { return gemInfo(x, true); });
+    return string.replace(/(Fractured|Chipped|Dull|Clouded|Bright|Glowing|Radiant|Flawless|Perfect|Priceless) (Ruby|Emerald|Diamond|Sapphire|Amethyst)(?! \()/g, function (x) { return gemInfo(x, true); })
 }
 
 function addGemDropdownColorClass(id) {
@@ -1123,14 +1149,14 @@ function addGemDropdownColorClass(id) {
 }
 
 function createStat(row, id, name) {
-    var c1 = document.createElement('td');
-    c1.innerHTML = "<a href='javascript:statReset(\"" + id + "\",-1)'>[R]</a> " + name;
-    var c2 = document.createElement('td');
-    c2.id = id;
-    c2.dataset.value = 0;
-    c2.textContent = "0";
-    row.append(c1);
-    row.append(c2);
+    var c1 = document.createElement('td')
+    c1.innerHTML = "<a href='javascript:statReset(\"" + id + "\",-1)'>[R]</a> " + name
+    var c2 = document.createElement('td')
+    c2.id = id
+    c2.dataset.value = 0
+    c2.textContent = "0"
+    row.append(c1)
+    row.append(c2)
 }
 
 function addMaterialStat(add) {
@@ -1142,9 +1168,8 @@ function addMaterialStat(add) {
     stats.allTimeMatUsageCount++
 
     // Save after every 30 actions to reduce wear of client SSD
-    if (stats.allTimeMatUsageCount % 30 === 0) {
+    if (stats.allTimeMatUsageCount % 30 === 0)
         GM.setValue("HExt_stats", stats)
-    }
 
     //For testing
     unsafeWindow.currentMatActions = currentMatActions
@@ -1188,6 +1213,7 @@ function openSkillTrain(id) {
                         minCost1Tier = tier
                         minCost1 = costX1
                     }
+
                     if (costX10 < minCost10) {
                         minCost10Tier = tier
                         minCost10 = costX10
@@ -1209,7 +1235,7 @@ function openSkillTrain(id) {
             currentHtml = currentHtml.replace(/Train 10x<\/a> \(([\d,]+) SP\)/, function (match, m1) { return 'Train 10x</a> (' + m1 + ' SP)<br>' + message10 })
 
             unsafeWindow.showSkillPopup()
-            let skillPopupHTML = '<h2>View Skill</h2><p>' + currentHtml + '</p>';
+            let skillPopupHTML = '<h2>View Skill</h2><p>' + currentHtml + '</p>'
             document.getElementById('skill-popup-content').innerHTML = skillPopupHTML
         })
     } else {
@@ -1249,7 +1275,7 @@ function createCheckbox(name, text, className, callback) {
     checkBoxDom.addEventListener("change", function (e) {
         settings[e.target.id.substring(5)] = e.target.checked
         GM.setValue("HExt_settings", settings)
-    });
+    })
 
     if (typeof callback === "function")
         checkBoxDom.addEventListener("change", callback)
@@ -1280,13 +1306,13 @@ function createSelect(name, text, className, options, callback) {
 
     selectDom.addEventListener("change", function (e) {
         console.log(this, this.options[this.selectedIndex].value)
-        settings[name] = this.options[this.selectedIndex].value;
+        settings[name] = this.options[this.selectedIndex].value
         GM.setValue("HExt_settings", settings)
 
         //Update global values when they exsists
         if (typeof unsafeWindow[name] !== "undefined")
             unsafeWindow[name] = settings[name]
-    });
+    })
 
     if (typeof callback === "function")
         checkBoxDom.addEventListener("change", callback)
@@ -1323,8 +1349,10 @@ function createChannelButton(channelId, name) {
             if (channel.id === this.dataset.channel) {
                 channel.style.display = "block"
                 this.count.textContent = ""
-                if (this.channelNumber === 1) unsafeWindow.chatcount1 = 0
-                if (this.channelNumber === 10) unsafeWindow.chatcount10 = 0
+                if (this.channelNumber === 1)
+                    unsafeWindow.chatcount1 = 0
+                if (this.channelNumber === 10)
+                    unsafeWindow.chatcount10 = 0
                 unsafeWindow.chatview = this.channelNumber
 
                 //Mark clan messages as read
@@ -1352,7 +1380,8 @@ function createChannelButton(channelId, name) {
 
 function openClanMemberProfile(e) {
     let display = document.getElementById("popup").style.display
-    if (display !== "none" && display !== "") return;
+    if (display !== "none" && display !== "")
+        return
 
     // Try to find user clan member id from cache
     if (typeof clanMemberCache[this.textContent] !== "undefined") {
@@ -1405,28 +1434,31 @@ function addClearLogButton() {
 }
 
 function notify(message, sound) {
-    if (settings.notifyPause) return
+    if (settings.notifyPause)
+        return
 
     if (typeof sound === 'undefined') {
-        notifSound.play();
+        notifSound.play()
     } else if (sound == "cheerful") {
-        cheerfulSound.volume = 0.6;
-        cheerfulSound.play();
+        cheerfulSound.volume = 0.6
+        cheerfulSound.play()
     } else if (sound == "eerie") {
-        eerieSound.play();
+        eerieSound.play()
     }
 
     let n = new Notification("Heroes RPG", {
         body: message
-    });
+    })
 }
 
 String.prototype.toInt = function () {
     return parseInt(this.replace(/,/g, ''))
 }
+
 Number.prototype.thousandSeparate = function () {
     return this.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")
 }
+
 //Source: https://stackoverflow.com/questions/9461621/how-to-format-a-number-as-2-5k-if-a-thousand-or-more-otherwise-900-in-javascrip
 function nFormatter(num, digits) {
     var si = [
@@ -1437,164 +1469,169 @@ function nFormatter(num, digits) {
         { value: 1E12, symbol: "T" },
         { value: 1E15, symbol: "P" },
         { value: 1E18, symbol: "E" }
-    ];
-    var rx = /\.0+$|(\.[0-9]*[1-9])0+$/;
-    var i;
+    ]
+    var rx = /\.0+$|(\.[0-9]*[1-9])0+$/
+    var i
     for (i = si.length - 1; i > 0; i--) {
-        if (num >= si[i].value) {
-            break;
-        }
+        if (num >= si[i].value)
+            break
     }
-    return (num / si[i].value).toFixed(digits).replace(rx, "$1") + si[i].symbol;
+    return (num / si[i].value).toFixed(digits).replace(rx, "$1") + si[i].symbol
 }
 
 //Source: https://github.com/vlmlee/Root-Finding
 function newtonRaphson(guess, increment, iteration, eps, f) {
-    let rootFound = false;
+    let rootFound = false
 
     for (let i = 0; i < iteration + 1; i++) {
-        let fPrime = (f(guess + increment / 2) - f(guess - increment / 2)) / increment;
-        guess += -f(guess) / fPrime;
+        let fPrime = (f(guess + increment / 2) - f(guess - increment / 2)) / increment
+        guess += -f(guess) / fPrime
         if (Math.abs(f(guess)) <= eps) {
-            rootFound = true;
-            break;
+            rootFound = true
+            break
         }
     }
 
-    if (rootFound) {
-        return guess;
-    } else {
-        return false;
-    }
+    if (rootFound)
+        return guess
+    else
+        return false
 }
 
 function addStyleSheet() {
-    let sheet;
-    let style = document.createElement('style');
-    style.type = "text/css";
-    let head = document.getElementsByTagName('head')[0];
-    head.appendChild(style);
-    sheet = style.sheet;
+    let sheet
+    let style = document.createElement('style')
+    style.type = "text/css"
+    let head = document.getElementsByTagName('head')[0]
+    head.appendChild(style)
+    sheet = style.sheet
     sheet.insertRule('.col-4 {' +
         '    width: 32.5%;' +
-        '}', sheet.cssRules.length);
+        '}', sheet.cssRules.length)
     sheet.insertRule('#channels {' +
         '    display: flex;' +
-        '}', sheet.cssRules.length);
+        '}', sheet.cssRules.length)
     sheet.insertRule('#channels button {' +
         '    width: auto;' +
         '    flex: 1 0 auto;' +
-        '}', sheet.cssRules.length);
+        '}', sheet.cssRules.length)
     sheet.insertRule('.settings {' +
         '    color: white;' +
         '    background: #2e2e2e;' +
         '    display: inline-block;' +
         '    vertical-align: top;' +
-        '}', sheet.cssRules.length);
+        '}', sheet.cssRules.length)
     sheet.insertRule('.settings input {' +
         '    vertical-align: top;' +
-        '}', sheet.cssRules.length);
+        '}', sheet.cssRules.length)
     sheet.insertRule('.settings label {' +
         '    margin-left: 3px;' +
-        '}', sheet.cssRules.length);
+        '}', sheet.cssRules.length)
     sheet.insertRule('.setting {' +
         '    padding: 2px 2px 0;' +
-        '}', sheet.cssRules.length);
+        '}', sheet.cssRules.length)
     sheet.insertRule('.table-style {' +
         '    margin: 3px 0px 0px 3px;' +
         '    background: none repeat scroll 0% 0% #2B2B2B;' +
         '    border: 1px solid #111;' +
-        '}', sheet.cssRules.length);
+        '}', sheet.cssRules.length)
     sheet.insertRule('#chat_table2 {' +
         '    width: 754px;' +
-        '}', sheet.cssRules.length);
+        '}', sheet.cssRules.length)
     sheet.insertRule('#clan_chat_input {' +
         '    width: 700px;' +
         '    margin: 3px 0px 0px 3px;' +
-        '}', sheet.cssRules.length);
+        '}', sheet.cssRules.length)
     sheet.insertRule('.donation {' +
         '    margin: 3px 0px 0px 3px;' +
         '    background: none repeat scroll 0% 0% #2B2B2B;' +
         '    border: 1px solid #111;' +
         '    color: #ffc439;' +
         '    padding: 0px 4px;' +
-        '}', sheet.cssRules.length);
+        '}', sheet.cssRules.length)
     sheet.insertRule('.donation > form, .donation > form > input {' +
         '    background: transparent;' +
         '    border: 0;' +
         '    padding: 1px 0px 1px;' +
         '    vertical-align: middle;' +
         '    margin-left: 4px;' +
-        '}', sheet.cssRules.length);
+        '}', sheet.cssRules.length)
     sheet.insertRule('#gemid, small.xx-small {' +
         '    font-size: xx-small;' +
-        '}', sheet.cssRules.length);
+        '}', sheet.cssRules.length)
     sheet.insertRule('.left-quest-action {' +
         '    font-size: 10px;' +
         '    line-height: 1em;' +
-        '}', sheet.cssRules.length);
+        '}', sheet.cssRules.length)
     sheet.insertRule('.settings select {' +
         '    width: 100%;' +
         '    font-size: 11px;' +
-        '}', sheet.cssRules.length);
-    sheet.insertRule('.g-green {color: #88FF88;}', sheet.cssRules.length);
-    sheet.insertRule('.d-green {color: #00BB00;}', sheet.cssRules.length);
-    sheet.insertRule('.purple  {color: #CC66CC;}', sheet.cssRules.length);
-    sheet.insertRule('.yellow  {color: #FFFF00;}', sheet.cssRules.length);
-    sheet.insertRule('.l-blue  {color: #CCFFFF;}', sheet.cssRules.length);
-    sheet.insertRule('.blue    {color: #6666FF;}', sheet.cssRules.length);
-    sheet.insertRule('.red     {color: #FF7171;}', sheet.cssRules.length);
-    sheet.insertRule('.l-red   {color: #F59292;}', sheet.cssRules.length);
-    sheet.insertRule('.orang   {color: #FFA550;}', sheet.cssRules.length);
-    sheet.insertRule('.white   {color: #FFFFFF;}', sheet.cssRules.length);
-    sheet.insertRule('.smol    {font-size: 10px;}', sheet.cssRules.length);
-    sheet.insertRule('.x-smol  {font-size: 8px;}', sheet.cssRules.length);
-    sheet.insertRule('.padl2   {padding-left: 4px;}', sheet.cssRules.length);
-    sheet.insertRule('.bold    {font-weight: bold;}', sheet.cssRules.length);
+        '}', sheet.cssRules.length)
+    sheet.insertRule('.g-green {color: #88FF88;}', sheet.cssRules.length)
+    sheet.insertRule('.d-green {color: #00BB00;}', sheet.cssRules.length)
+    sheet.insertRule('.purple  {color: #CC66CC;}', sheet.cssRules.length)
+    sheet.insertRule('.yellow  {color: #FFFF00;}', sheet.cssRules.length)
+    sheet.insertRule('.l-blue  {color: #CCFFFF;}', sheet.cssRules.length)
+    sheet.insertRule('.blue    {color: #6666FF;}', sheet.cssRules.length)
+    sheet.insertRule('.red     {color: #FF7171;}', sheet.cssRules.length)
+    sheet.insertRule('.l-red   {color: #F59292;}', sheet.cssRules.length)
+    sheet.insertRule('.orang   {color: #FFA550;}', sheet.cssRules.length)
+    sheet.insertRule('.white   {color: #FFFFFF;}', sheet.cssRules.length)
+    sheet.insertRule('.smol    {font-size: 10px;}', sheet.cssRules.length)
+    sheet.insertRule('.x-smol  {font-size: 8px;}', sheet.cssRules.length)
+    sheet.insertRule('.padl2   {padding-left: 4px;}', sheet.cssRules.length)
+    sheet.insertRule('.bold    {font-weight: bold;}', sheet.cssRules.length)
 
     if (settings.fixedPopupHeader) {
         sheet.insertRule('#popup {' +
             '    overflow-y: hidden;' +
-            '}', sheet.cssRules.length);
+            '}', sheet.cssRules.length)
         sheet.insertRule('#popup-content {' +
             '    overflow-y: auto;' +
             '    max-height: 498px;' +
-            '}', sheet.cssRules.length);
+            '}', sheet.cssRules.length)
     }
 }
 
 function applyInjections() {
-    var script = document.createElement("script");
+    var script = document.createElement("script")
     script.innerHTML = `
-riftActive = false;
+riftSoon = false
+riftActive = false
 
 function displayAutosRemaining(autos, fatigue) {
     if (fatigue == 1 && autos > 0) {
-        document.title = '(R' + autos + ') Heroes RPG';
-    } else if (autos >= 0 && fatigue != 1) {
-        if (riftActive)
-            document.title = '[RIFT] (' + autos + ') Heroes RPG';
+        if (riftSoon)
+            document.title = '[RS] (R' + autos + ') Heroes RPG'
+        else if (riftActive)
+            document.title = '[RIFT] (R' + autos + ') Heroes RPG'
         else
-            document.title = '(' + autos + ') Heroes RPG';
+            document.title = '(R' + autos + ') Heroes RPG'
+    } else if (autos >= 0 && fatigue != 1) {
+        if (riftSoon)
+            document.title = '[RS] (' + autos + ') Heroes RPG'
+        else if (riftActive)
+            document.title = '[RIFT] (' + autos + ') Heroes RPG'
+        else
+            document.title = '(' + autos + ') Heroes RPG'
     } else {
-        document.title = '(AUTOS EXPIRED) Heroes RPG';
+        document.title = '(AUTOS EXPIRED) Heroes RPG'
     }
 
-    var acol;
-    var disvar;
+    var acol
+    var disvar
     if (fatigue == 1) {
-        acol = 'FF3333';
-        disvar = 'Reserve Autos';
+        acol = 'FF3333'
+        disvar = 'Reserve Autos'
     } else {
-        disvar = 'Autos';
-        if (autos > 20) {
-            acol = '33FF33';
-        } else {
-            acol = 'FFFF33';
-        }
+        disvar = 'Autos'
+        if (autos > 20)
+            acol = '33FF33'
+        else
+            acol = 'FFFF33'
     }
 
-    return '<div style="color: #' + acol + '; text-align: center">' + autos + ' ' + disvar + ' Remaining</div>';
+    return '<div style="color: #' + acol + '; text-align: center">' + autos + ' ' + disvar + ' Remaining</div>'
 }
 
 cmdFlags = {dh: false, stats: false, skills: false}
@@ -1707,6 +1744,6 @@ equipAccessory = (function() {
         updateStatsTimeout = setTimeout(send_chat_command.bind(null, 'stats'), 1000);
     };
 })();
-`;
-    document.body.appendChild(script);
+`
+    document.body.appendChild(script)
 }
