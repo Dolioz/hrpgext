@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         HeroesRPG Extension
 // @namespace    https://github.com/dolioz/hrpgext
-// @version      171
+// @version      172
 // @description  Improves UI, does not automate gameplay
 // @downloadURL  https://github.com/Dolioz/hrpgext/raw/master/HRPGExtension.user.js
 // @match        http://www.heroesrpg.com/*
@@ -69,7 +69,7 @@ let settings = null, defaultSettings = {
     quickQuest: false,
     showQP: true,
     showPower: true,
-    attrBoost: false,
+    attrBonus: false,
     dhTimer: true,
     showClanProfile: true,
 
@@ -97,10 +97,6 @@ let settings = null, defaultSettings = {
     clanMemberCache = await GM.getValue("HExt_clanMemberCache", {})
     equipmentCache = await GM.getValue("HExt_equipmentCache", [])
     equipmentSlots = await GM.getValue("HExt_equipmentSlots", {})
-
-    //For testing
-    unsafeWindow.allTimeMatUsageAvg = stats.allTimeMatUsageAvg
-    unsafeWindow.allTimeMatUsageCount = stats.allTimeMatUsageCount
 
     addStyleSheet()
     applyInjections()
@@ -207,9 +203,9 @@ let settings = null, defaultSettings = {
         let attrElement = document.getElementById(attr)
         if (attrElement !== null) {
             let attrBonus = document.createElement('span')
-            attrBonus.className = "attr_boost g-green x-smol"
-            attrBonus.id = "ext_" + attr + "_boost"
-            attrBonus.style.display = settings.attrBoost ? 'inline-block' : 'none'
+            attrBonus.className = "attr_bonus g-green smol"
+            attrBonus.id = "ext_" + attr + "_bonus"
+            attrBonus.style.display = settings.attrBonus ? 'inline-block' : 'none'
             attrElement.parentElement.appendChild(attrBonus)
         }
     }
@@ -253,7 +249,7 @@ let settings = null, defaultSettings = {
     setTimeout(function () {
         if (settings.dhTimer)
             sendCommand('dh')
-        if (settings.showPower || settings.attrBoost)
+        if (settings.showPower || settings.attrBonus)
             sendCommand('stats')
         if (settings.showQP)
             unsafeWindow.updateQuestPoints()
@@ -536,22 +532,22 @@ async function prepareSettings() {
     otherMenu.appendChild(otherHeader)
     otherMenu.appendChild(createCheckbox("startupGathering", "Set gathering as a startup screen", "setting"))
     otherMenu.appendChild(createCheckbox("personalDH", "Ask confirmation on personal DH", "setting"))
+    otherMenu.appendChild(createCheckbox("showClanProfile", "Show clan profile in clan popup", "setting"))
+    otherMenu.appendChild(createCheckbox("compareTiers", "Tell about cheaper skill tiers", "setting"))
+    otherMenu.appendChild(document.createElement('br'))
     otherMenu.appendChild(createCheckbox("centerPopup", "Center popups in the viewport", "setting"))
     otherMenu.appendChild(createCheckbox("fixedPopupHeader", "Fixed popup header", "setting"))
     otherMenu.appendChild(document.createElement('br'))
-    otherMenu.appendChild(createCheckbox("compareTiers", "Tell about cheaper skill tiers", "setting"))
-    otherMenu.appendChild(document.createElement('br'))
-    otherMenu.appendChild(createCheckbox("quickQuest", "Show quest actions in the left menu", "setting greytext", changeClassDisplay.bind(null, 'left-quest-action', 'quickQuest', 'table-row')))
-    otherMenu.appendChild(createCheckbox("showQP", "Show quest points in the left menu", "setting", changeClassDisplay.bind(null, 'qp_row', 'showQP', 'table-row')))
-    otherMenu.appendChild(createCheckbox("showPower", "Show power stats in the left menu", "setting", changeClassDisplay.bind(null, 'power_row', 'showPower', 'table-row')))
-    otherMenu.appendChild(createCheckbox("attrBoost", "Show attr boost from jewelry & aura", "setting", changeClassDisplay.bind(null, 'attr_boost', 'attrBoost', 'inline-block')))
-    otherMenu.appendChild(createCheckbox("dhTimer", "Show remaining DH timer on the left", "setting", changeDHTimerSetting))
-    otherMenu.appendChild(createCheckbox("showClanProfile", "Show clan profile in Clan popup", "setting"))
+    otherMenu.appendChild(createCheckbox("showPower", "Show power and armor", "setting", changeClassDisplay.bind(null, 'power_row', 'showPower', 'table-row')))
+    otherMenu.appendChild(createCheckbox("attrBonus", "Show attribute bonus", "setting", changeClassDisplay.bind(null, 'attr_bonus', 'attrBonus', 'inline-block')))
+    otherMenu.appendChild(createCheckbox("quickQuest", "Show quest re-roll/reduce buttons", "setting", changeClassDisplay.bind(null, 'left-quest-action', 'quickQuest', 'table-row')))
+    otherMenu.appendChild(createCheckbox("showQP", "Show quest points (updates on quest completion)", "setting", changeClassDisplay.bind(null, 'qp_row', 'showQP', 'table-row')))
+    otherMenu.appendChild(createCheckbox("dhTimer", "Show remaining DH timer", "setting", changeDHTimerSetting))
     otherMenu.appendChild(document.createElement('br'))
     otherMenu.appendChild(createCheckbox("creditStore", "Show store link next to credits", "setting", changeClassDisplay.bind(null, 'cstore_btn', 'creditStore', 'inline-block')))
     otherMenu.appendChild(createSelect("creditStoreTab", "Which tab credit store link will open", "setting", [
         { value: "purchase", text: "Purchase Credits" },
-        { value: "boosts", text: "Boosts" },
+        { value: "s", text: "s" },
         { value: "upgrades", text: "Autos" },
         { value: "misc", text: "Misc" },
         { value: "lp", text: "Loyalty Points" },
@@ -606,7 +602,7 @@ function changeClassDisplay(elementClass, settingName, display) {
         switch (settingName) {
             case 'showQP': unsafeWindow.updateQuestPoints(); break
             case 'showPower':
-            case 'attrBoost': sendCommand('stats'); break
+            case 'attrBonus': sendCommand('stats'); break
         }
     }
 }
@@ -786,11 +782,13 @@ function processChatRows(chatRows) {
                 }
 
                 //Shorten rift kill message
+                //Global: ZN Tanar (Level 150,000) landed the killing blow on the Hades [7] (Level 150,000) obtaining 1 Soul Shard(s) and 1,156 Riftscore! An additional x1.8 Riftscore multiplier was added to the Rift!
+                //Global: ZN Tanar (150,000) killed Hades [7] (150,000): 2 Shard(s), 1,156 Riftscore, x1.8 multiplier!
                 if (settings.shortenRiftKill) {
-                    let regex = /Global: (.+) \((.+)\) landed the killing blow on the (.+) obtaining (.+) Soul Shard\(s\) and (.+) Riftscore! An additional (.+) Riftscore multiplier was added to the Rift!/
+                    let regex = /Global: (.+) \(Level (.+)\) landed the killing blow on the (.+) \(Level (.+)\) obtaining (.+) Soul Shard\(s\) and (.+) Riftscore! An additional (.+) Riftscore multiplier was added to the Rift!/
                     let match = regex.exec(row.childNodes[0].lastChild.textContent)
                     if (match) {
-                        row.childNodes[0].lastChild.innerHTML = 'Global: <a href="javascript:m(' + match[1] + ')">' + match[1] + '</a> (' + match[2] + ') killed ' + match[3] + ', multiplier ' + match[6] + ' was added!'
+                        row.childNodes[0].lastChild.innerHTML = 'Global: <a href="javascript:m(' + match[1] + ')">' + match[1] + '</a> (' + match[2] + ') killed ' + match[3] + ' (' + match[4] + '): ' + match[5] + ' Shard(s), ' + match[6] + ' Riftscore, ' + match[7] + ' multiplier!'
                     }
                 }
 
@@ -943,15 +941,15 @@ function processChatRows(chatRows) {
             //Find /stats command result in chat, parse and then hide it
             let stats = message.match(/Strength: ([\d,]+)Dexterity: ([\d,]+)Stamina: ([\d,]+)Power: ([\d,]+)Armor: ([\d,]+)/)
             if (stats) {
-                if (settings.attrBoost) {
+                if (settings.attrBonus) {
                     let _attributes = ['a_str', 'a_dex', 'a_sta']
                     for (let ai = 0, attr; attr = _attributes[ai]; ai++) {
                         let baseAttrElement = document.getElementById(attr)
                         if (baseAttrElement) {
                             let baseAttr = baseAttrElement.textContent.toInt()
-                            let boostAttrElement = document.getElementById("ext_" + attr + "_boost")
-                            if (boostAttrElement)
-                                boostAttrElement.textContent = "+" + (stats[ai + 1].toInt() - baseAttr).thousandSeparate()
+                            let bonusAttrElement = document.getElementById("ext_" + attr + "_bonus")
+                            if (bonusAttrElement)
+                                bonusAttrElement.textContent = "+" + (stats[ai + 1].toInt() - baseAttr).thousandSeparate()
                         }
                     }
                 }
@@ -1046,15 +1044,15 @@ function updateDHTimer(keepTime) {
         totalSeconds = boostTime.haste
         message = "Haste is running for "
         if (decreaseTime)
-			boostTime.haste -= 10
+            boostTime.haste -= 10
     } else if (boostTime.double > 0) {
         totalSeconds = boostTime.double
         message = "Double is running for "
         if (decreaseTime)
-			boostTime.double -= 10
+            boostTime.double -= 10
     } else {
         if (dhInterval !== null)
-			clearInterval(dhInterval)
+            clearInterval(dhInterval)
         dhInterval = null
     }
 
@@ -1170,14 +1168,6 @@ function addMaterialStat(add) {
     // Save after every 30 actions to reduce wear of client SSD
     if (stats.allTimeMatUsageCount % 30 === 0)
         GM.setValue("HExt_stats", stats)
-
-    //For testing
-    unsafeWindow.currentMatActions = currentMatActions
-    unsafeWindow.currentMatUsage = currentMatUsage
-    unsafeWindow.currentMatAvg = currentMatAvg
-    unsafeWindow.allTimeMatUsageAvg = stats.allTimeMatUsageAvg
-    unsafeWindow.allTimeMatUsageCount = stats.allTimeMatUsageCount
-    //TODO Update in Statistics
 }
 
 function getSkillData(id) {
@@ -1578,7 +1568,6 @@ function addStyleSheet() {
     sheet.insertRule('.orang   {color: #FFA550;}', sheet.cssRules.length)
     sheet.insertRule('.white   {color: #FFFFFF;}', sheet.cssRules.length)
     sheet.insertRule('.smol    {font-size: 10px;}', sheet.cssRules.length)
-    sheet.insertRule('.x-smol  {font-size: 8px;}', sheet.cssRules.length)
     sheet.insertRule('.padl2   {padding-left: 4px;}', sheet.cssRules.length)
     sheet.insertRule('.bold    {font-weight: bold;}', sheet.cssRules.length)
 
