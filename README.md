@@ -5,6 +5,11 @@ Initially created by ApDea and now forked to continue developement.
 
 ## Changelog
 
+### v1.8.1
+
+[Features]
+- Added a menu with game header links (only active when the game header is hidden)
+
 ### v1.8.0
 
 [Features]

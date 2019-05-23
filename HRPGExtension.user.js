@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         HeroesRPG Extension
 // @namespace    https://github.com/dolioz/hrpgext
-// @version      1.8.0
+// @version      1.8.1
 // @description  Improves UI, does not automate gameplay
 // @downloadURL  https://github.com/Dolioz/hrpgext/raw/master/HRPGExtension.user.js
 // @updateURL    https://github.com/Dolioz/hrpgext/raw/master/HRPGExtension.user.js
@@ -32,7 +32,7 @@ let skillTuples = [
     { ids: [51, 52, 53], ratio: [1, 1, 1] },
     { ids: [54, 55, 56], ratio: [1, 1, 1] },
 ]
-let channels = [], channelBtnContainer, clanChatContainer, clanChat, settingsContainer
+let channels = [], channelBtnContainer, clanChatContainer, clanChat, headerMenuContainer, settingsContainer
 let stats = null, currentMatUsage = 0, currentMatActions = 0, currentMatAvg = 0
 let startingStats = {
     allTimeMatUsageAvg: 145.42083333333326,
@@ -137,9 +137,11 @@ let settings = null, defaultSettings = {
     clanChatContainer = createChannel(2, "Clan")
     createChannelButton(10, "Log")
     createChannelButton(100, "Statistics")
-    settingsContainer = createChannel(3, "Settings")
+    headerMenuContainer = createChannel(3, "Menu")
+    settingsContainer = createChannel(4, "Settings")
 
     prepareSettings()
+    createHeaderMenu()
     prepareClanChannel()
     prepareEquipment()
 
@@ -492,7 +494,7 @@ async function prepareSettings() {
         }
     }
 
-    //Create HTML elements for options
+    //Create HTML elements for settings
     let notifMenu = document.createElement('div')
     notifMenu.className = "settings table-style col-4"
     let notifHeader = document.createElement("div")
@@ -531,6 +533,7 @@ async function prepareSettings() {
     chatMenu.appendChild(createCheckbox("increaseChat", "Increase chat size limit to 300", "setting", changeChatSizeLimit))
     settingsContainer.appendChild(chatMenu)
 
+
     let otherMenu = document.createElement('div')
     otherMenu.className = "settings table-style col-4"
     let otherHeader = document.createElement("div")
@@ -566,6 +569,41 @@ async function prepareSettings() {
     settingsContainer.appendChild(otherMenu)
 }
 
+function createHeaderMenu() {
+    //Create HTML elements for header menu
+    let headerMenu = document.createElement('div')
+    headerMenu.className = "settings table-style col-100 right"
+    let otherMenuHeader = document.createElement("div")
+    otherMenuHeader.textContent = "Header Links"
+    otherMenuHeader.className = "category-header"
+    headerMenu.appendChild(otherMenuHeader)
+
+    headerMenu.appendChild(createLink('index.php?logout', 'Logout'))
+    headerMenu.appendChild(document.createElement('br'))
+    headerMenu.appendChild(createLink('javascript:forum()', 'Forum'))
+    headerMenu.appendChild(createLink('http://www.heroesrpg.com/wiki/wiki.html', 'Wiki', true))
+    headerMenu.appendChild(createLink('javascript:achievements()', 'Achievements'))
+    headerMenu.appendChild(document.createElement('br'))
+    headerMenu.appendChild(createLink('javascript:ref()', 'Referrals'))
+    headerMenu.appendChild(createLink('javascript:rules()', 'Rules'))
+    headerMenu.appendChild(document.createElement('br'))
+    headerMenu.appendChild(createLink('javascript:displayPref()', 'Preferences'))
+    headerMenu.appendChild(document.createElement('br'))
+    headerMenu.appendChild(createLink('javascript:viewLeaderboards(1)', 'Leaderboards'))
+
+    headerMenuContainer.appendChild(headerMenu)
+}
+
+function createLink(href, text, newTab) {
+    var link = document.createElement('a')
+    link.href = href
+    link.textContent = text
+    if (newTab)
+        link.target = '_blank'
+    link.className = 'header-link links'
+    return link
+}
+
 MutationRecord.prototype.isBeingEdited = function () {
     return (typeof this.target.dataset.editing !== "undefined")
 }
@@ -589,9 +627,9 @@ function refreshChatVisibility() {
 }
 
 function changeChannelVisibility(channelId, settingName) {
-    let clanChatButton = document.querySelector("[data-channel='" + channelId + "']")
-    if (clanChatButton !== null)
-        clanChatButton.style.display = settings[settingName] ? 'inline-block' : 'none'
+    let chatButton = document.querySelector("[data-channel='" + channelId + "']")
+    if (chatButton !== null)
+        chatButton.style.display = settings[settingName] ? 'inline-block' : 'none'
 }
 
 function changeQuickQuestVisibility() {
@@ -1517,6 +1555,9 @@ function addStyleSheet() {
     head.appendChild(style)
     sheet = style.sheet
     sheet.insertRule('.col-4 {width: 32.5%;}', sheet.cssRules.length)
+    sheet.insertRule('.col-100 {width: 100%;}', sheet.cssRules.length)
+    sheet.insertRule('.links {padding: 4px 4px;}', sheet.cssRules.length)
+    sheet.insertRule('.right {text-align: right;}', sheet.cssRules.length)
     sheet.insertRule('#channels {display: flex;}', sheet.cssRules.length)
     sheet.insertRule('#channels button {width: auto; flex: 1 0 auto;}', sheet.cssRules.length)
     sheet.insertRule('.settings {color: white; background: #2e2e2e; display: inline-block; vertical-align: top;}', sheet.cssRules.length)
@@ -1555,10 +1596,13 @@ function addStyleSheet() {
 
 function toggleHeader() {
     let header = document.getElementById("header")
-    if (settings.hideHeader)
+    if (settings.hideHeader) {
         header.style.display = "none"
-    else
+        changeChannelVisibility('chat3', 'hideHeader')
+    } else {
         header.style.display = "block"
+        changeChannelVisibility('chat3', 'hideHeader')
+    }
 }
 
 function applyInjections() {
