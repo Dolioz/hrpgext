@@ -1,9 +1,10 @@
 // ==UserScript==
 // @name         HeroesRPG Extension
 // @namespace    https://github.com/dolioz/hrpgext
-// @version      172
+// @version      1.8.0
 // @description  Improves UI, does not automate gameplay
 // @downloadURL  https://github.com/Dolioz/hrpgext/raw/master/HRPGExtension.user.js
+// @updateURL    https://github.com/Dolioz/hrpgext/raw/master/HRPGExtension.user.js
 // @match        http://www.heroesrpg.com/*
 // @match        http://heroesrpg.com/*
 // @match        https://www.heroesrpg.com/*
@@ -15,9 +16,9 @@
 
 // DISCLAIMER: CHANGING THIS SCRIPT TO AUTOMATE GAMEPLAY IS AGAINST THE RULES
 
-let notifSound, cheerfulSound, eerieSound, username, version, readableVersion
+let notifSound, cheerfulSound, eerieSound, username, version, lastVersion
 let lastChatRow = 0, lastLogRow = 0, isFirstChatMutation = true
-let clanMemberCache, equipmentCache, equipmentSlots
+let clanMemberCache, equipmentCache
 let dhInterval = null, boostTime = { double: 0, haste: 0 }
 let skillTuples = [
     { ids: [1, 2, 3], ratio: [1, 2.67, 6] },
@@ -61,17 +62,18 @@ let settings = null, defaultSettings = {
 
     startupGathering: false,
     personalDH: false,
-    centerPopup: true,
-    fixedPopupHeader: true,
-
+    showClanProfile: true,
     compareTiers: false,
 
-    quickQuest: false,
-    showQP: true,
+    hideHeader: false,
+    fixedPopupHeader: true,
+    permanentScrollbar: false,
+
     showPower: true,
     attrBonus: false,
+    quickQuest: false,
+    showQP: true,
     dhTimer: true,
-    showClanProfile: true,
 
     creditStore: false,
     creditStoreTab: "purchase",
@@ -85,20 +87,25 @@ let settings = null, defaultSettings = {
     if (document.getElementById('main-stats') === null)
         return //Game window not found
 
-    version = parseInt(GM.info.script.version)
-    //Convert integer version into floating point 121 -> 1.21 and remove 1 trailing zero 120 -> 1.2
-    let fixed = version % 10 === 0 ? 1 : 2
-    readableVersion = (version / 100).toFixed(fixed)
-    document.getElementById('footer').textContent += "  ~~HExt v" + readableVersion + "~~"
+    //Update notification
+    version = GM.info.script.version
+    lastVersion = await GM.getValue("HExt_lastVersion", '1.0.0')
+    if (lastVersion < version) {
+        GM.setValue("HExt_lastVersion", version)
+        setTimeout(notifyNewVersion, 750) //Notify users about new features after chat is loaded
+    }
+
+    //Show version
+    document.getElementById('footer').textContent += "  ~~HExt v" + version + "~~"
 
     //Restore user settings
     settings = await GM.getValue("HExt_settings", defaultSettings)
     stats = await GM.getValue("HExt_stats", startingStats)
     clanMemberCache = await GM.getValue("HExt_clanMemberCache", {})
     equipmentCache = await GM.getValue("HExt_equipmentCache", [])
-    equipmentSlots = await GM.getValue("HExt_equipmentSlots", {})
 
     addStyleSheet()
+    toggleHeader()
     applyInjections()
 
     //Notification sounds
@@ -521,7 +528,7 @@ async function prepareSettings() {
     chatMenu.appendChild(createCheckbox("urlToLink", "Turn URLs into clickable links", "setting l-blue"))
     chatMenu.appendChild(createCheckbox("clickableForum", "Turn URLs into links in forum", "setting l-blue"))
     chatMenu.appendChild(document.createElement('br'))
-    chatMenu.appendChild(createCheckbox("increaseChat", "Increase chat size limit to 300", "setting", chnageChatSizeLimit))
+    chatMenu.appendChild(createCheckbox("increaseChat", "Increase chat size limit to 300", "setting", changeChatSizeLimit))
     settingsContainer.appendChild(chatMenu)
 
     let otherMenu = document.createElement('div')
@@ -535,8 +542,9 @@ async function prepareSettings() {
     otherMenu.appendChild(createCheckbox("showClanProfile", "Show clan profile in clan popup", "setting"))
     otherMenu.appendChild(createCheckbox("compareTiers", "Tell about cheaper skill tiers", "setting"))
     otherMenu.appendChild(document.createElement('br'))
-    otherMenu.appendChild(createCheckbox("centerPopup", "Center popups in the viewport", "setting"))
-    otherMenu.appendChild(createCheckbox("fixedPopupHeader", "Fixed popup header", "setting"))
+    otherMenu.appendChild(createCheckbox("hideHeader", "Hide game header", "setting", toggleHeader))
+    otherMenu.appendChild(createCheckbox("fixedPopupHeader", "Fixed popup header (requires refresh)", "setting"))
+    otherMenu.appendChild(createCheckbox("permanentScrollbar", "Permanent scrollbar (requires refresh)", "setting"))
     otherMenu.appendChild(document.createElement('br'))
     otherMenu.appendChild(createCheckbox("showPower", "Show power and armor", "setting", changeClassDisplay.bind(null, 'power_row', 'showPower', 'table-row')))
     otherMenu.appendChild(createCheckbox("attrBonus", "Show attribute bonus", "setting", changeClassDisplay.bind(null, 'attr_bonus', 'attrBonus', 'inline-block')))
@@ -553,6 +561,8 @@ async function prepareSettings() {
         { value: "lp", text: "Loyalty Points" },
         { value: "qp", text: "Quest Points" },
     ]))
+    otherMenu.appendChild(document.createElement('br'))
+
     settingsContainer.appendChild(otherMenu)
 }
 
@@ -607,7 +617,7 @@ function changeClassDisplay(elementClass, settingName, display) {
     }
 }
 
-function chnageChatSizeLimit() {
+function changeChatSizeLimit() {
     unsafeWindow.chatsize = settings.increaseChat ? 300 : 100
 }
 
@@ -1368,6 +1378,17 @@ function createChannelButton(channelId, name) {
     return button
 }
 
+function notifyNewVersion() {
+    let chat = document.querySelector('#chat_table1 > tbody')
+    if (chat !== null) {
+        let tr = document.createElement('tr')
+        tr.id = "ct1_tr" + unsafeWindow.chatid1
+        tr.innerHTML = '<td>[ <span class="blue">HRPG Extension has been updated to v' + version + ', read about changes from <a href="javascript:viewThread(2, 944);">forum</a></span> ]</td>'
+        chat.insertBefore(tr, chat.firstElementChild)
+        unsafeWindow.chatid1++
+    }
+}
+
 function openClanMemberProfile(e) {
     let display = document.getElementById("popup").style.display
     if (display !== "none" && display !== "")
@@ -1495,68 +1516,19 @@ function addStyleSheet() {
     let head = document.getElementsByTagName('head')[0]
     head.appendChild(style)
     sheet = style.sheet
-    sheet.insertRule('.col-4 {' +
-        '    width: 32.5%;' +
-        '}', sheet.cssRules.length)
-    sheet.insertRule('#channels {' +
-        '    display: flex;' +
-        '}', sheet.cssRules.length)
-    sheet.insertRule('#channels button {' +
-        '    width: auto;' +
-        '    flex: 1 0 auto;' +
-        '}', sheet.cssRules.length)
-    sheet.insertRule('.settings {' +
-        '    color: white;' +
-        '    background: #2e2e2e;' +
-        '    display: inline-block;' +
-        '    vertical-align: top;' +
-        '}', sheet.cssRules.length)
-    sheet.insertRule('.settings input {' +
-        '    vertical-align: top;' +
-        '}', sheet.cssRules.length)
-    sheet.insertRule('.settings label {' +
-        '    margin-left: 3px;' +
-        '}', sheet.cssRules.length)
-    sheet.insertRule('.setting {' +
-        '    padding: 2px 2px 0;' +
-        '}', sheet.cssRules.length)
-    sheet.insertRule('.table-style {' +
-        '    margin: 3px 0px 0px 3px;' +
-        '    background: none repeat scroll 0% 0% #2B2B2B;' +
-        '    border: 1px solid #111;' +
-        '}', sheet.cssRules.length)
-    sheet.insertRule('#chat_table2 {' +
-        '    width: 754px;' +
-        '}', sheet.cssRules.length)
-    sheet.insertRule('#clan_chat_input {' +
-        '    width: 700px;' +
-        '    margin: 3px 0px 0px 3px;' +
-        '}', sheet.cssRules.length)
-    sheet.insertRule('.donation {' +
-        '    margin: 3px 0px 0px 3px;' +
-        '    background: none repeat scroll 0% 0% #2B2B2B;' +
-        '    border: 1px solid #111;' +
-        '    color: #ffc439;' +
-        '    padding: 0px 4px;' +
-        '}', sheet.cssRules.length)
-    sheet.insertRule('.donation > form, .donation > form > input {' +
-        '    background: transparent;' +
-        '    border: 0;' +
-        '    padding: 1px 0px 1px;' +
-        '    vertical-align: middle;' +
-        '    margin-left: 4px;' +
-        '}', sheet.cssRules.length)
-    sheet.insertRule('#gemid, small.xx-small {' +
-        '    font-size: xx-small;' +
-        '}', sheet.cssRules.length)
-    sheet.insertRule('.left-quest-action {' +
-        '    font-size: 10px;' +
-        '    line-height: 1em;' +
-        '}', sheet.cssRules.length)
-    sheet.insertRule('.settings select {' +
-        '    width: 100%;' +
-        '    font-size: 11px;' +
-        '}', sheet.cssRules.length)
+    sheet.insertRule('.col-4 {width: 32.5%;}', sheet.cssRules.length)
+    sheet.insertRule('#channels {display: flex;}', sheet.cssRules.length)
+    sheet.insertRule('#channels button {width: auto; flex: 1 0 auto;}', sheet.cssRules.length)
+    sheet.insertRule('.settings {color: white; background: #2e2e2e; display: inline-block; vertical-align: top;}', sheet.cssRules.length)
+    sheet.insertRule('.settings input {vertical-align: top;}', sheet.cssRules.length)
+    sheet.insertRule('.settings label {margin-left: 3px;}', sheet.cssRules.length)
+    sheet.insertRule('.settings select {width: 100%; font-size: 11px;}', sheet.cssRules.length)
+    sheet.insertRule('.setting {padding: 2px 2px 0;}', sheet.cssRules.length)
+    sheet.insertRule('.table-style {argin: 3px 0px 0px 3px; background: none repeat scroll 0% 0% #2B2B2B; border: 1px solid #111;}', sheet.cssRules.length)
+    sheet.insertRule('#chat_table2 {width: 754px;}', sheet.cssRules.length)
+    sheet.insertRule('#clan_chat_input {width: 700px; margin: 3px 0px 0px 3px;}', sheet.cssRules.length)
+    sheet.insertRule('#gemid, small.xx-small {font-size: xx-small;}', sheet.cssRules.length)
+    sheet.insertRule('.left-quest-action {font-size: 10px; line-height: 1em;}', sheet.cssRules.length)
     sheet.insertRule('.g-green {color: #88FF88;}', sheet.cssRules.length)
     sheet.insertRule('.d-green {color: #00BB00;}', sheet.cssRules.length)
     sheet.insertRule('.purple  {color: #CC66CC;}', sheet.cssRules.length)
@@ -1572,14 +1544,21 @@ function addStyleSheet() {
     sheet.insertRule('.bold    {font-weight: bold;}', sheet.cssRules.length)
 
     if (settings.fixedPopupHeader) {
-        sheet.insertRule('#popup {' +
-            '    overflow-y: hidden;' +
-            '}', sheet.cssRules.length)
-        sheet.insertRule('#popup-content {' +
-            '    overflow-y: auto;' +
-            '    max-height: 498px;' +
-            '}', sheet.cssRules.length)
+        sheet.insertRule('#popup {overflow-y: hidden;}', sheet.cssRules.length)
+        sheet.insertRule('#popup-content {overflow-y: auto; max-height: 498px;}', sheet.cssRules.length)
     }
+
+    if (settings.permanentScrollbar) {
+        sheet.insertRule('html {overflow-y: scroll;}', sheet.cssRules.length)
+    }
+}
+
+function toggleHeader() {
+    let header = document.getElementById("header")
+    if (settings.hideHeader)
+        header.style.display = "none"
+    else
+        header.style.display = "block"
 }
 
 function applyInjections() {

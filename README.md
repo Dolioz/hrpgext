@@ -5,6 +5,18 @@ Initially created by ApDea and now forked to continue developement.
 
 ## Changelog
 
+### v1.8.0
+
+[Features]
+- Added auto update (only tested in firefox, may not work in chrome)
+- Option to hide game header
+- Option for a permanent scrollbar to keep the game UI static when switching channels (requires page refresh)
+
+[Polishing]
+- Added hint to the option "Fixed popup header" that it requires a page refresh
+- Removed option center popup, because it was not used
+- Show semantic version in footer
+
 ### v1.7.2
 
 [Features]
@@ -26,7 +38,7 @@ Initially created by ApDea and now forked to continue developement.
 [Polishing]
 - Further reformatting
 
-### v1.7
+### v1.7.0
 
 [Features] 
 - Added notification for "A Rift will open in 5 minutes!"
