@@ -5,6 +5,16 @@ Initially created by ApDea and now forked to continue developement.
 
 ## Changelog
 
+### v1.8.2
+
+[Features]
+- Added option for a static [Enter Rift] button
+- Shorten your own rift kill messages aswell
+- Hide other globals: added hero kills and quest completion
+
+[Bugfixing]
+- Fixed credit store link to "Boosts"
+
 ### v1.8.1
 
 [Features]

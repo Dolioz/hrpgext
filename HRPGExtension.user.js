@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         HeroesRPG Extension
 // @namespace    https://github.com/dolioz/hrpgext
-// @version      1.8.1
+// @version      1.8.2
 // @description  Improves UI, does not automate gameplay
 // @downloadURL  https://github.com/Dolioz/hrpgext/raw/master/HRPGExtension.user.js
 // @updateURL    https://github.com/Dolioz/hrpgext/raw/master/HRPGExtension.user.js
@@ -74,6 +74,7 @@ let settings = null, defaultSettings = {
     quickQuest: false,
     showQP: true,
     dhTimer: true,
+    enterRift: true,
 
     creditStore: false,
     creditStoreTab: "purchase",
@@ -182,6 +183,13 @@ let settings = null, defaultSettings = {
     dhTimeTr.innerHTML = '<td colspan="2" style="text-align: center; font-size: 10px" id="dhtime">Checking DH status...</td>'
     dhTimeTr.style.display = settings.dhTimer ? 'table-row' : 'none'
     table.appendChild(dhTimeTr)
+
+    //Static enter rift button
+    let enterRift = document.createElement('tr')
+    enterRift.id = "enterRift"
+    enterRift.innerHTML = '<td></td><td class=".greytext">[<a href="javascript:enterRift()">Enter Rift</a>]</td>'
+    enterRift.style.display = settings.enterRift ? 'table-row' : 'none'
+    table.appendChild(enterRift)
 
     let financialHeaderRow = null, questHeaderRow = null
     let leftRows = document.querySelectorAll('#main-stats > table > tbody > tr')
@@ -533,7 +541,6 @@ async function prepareSettings() {
     chatMenu.appendChild(createCheckbox("increaseChat", "Increase chat size limit to 300", "setting", changeChatSizeLimit))
     settingsContainer.appendChild(chatMenu)
 
-
     let otherMenu = document.createElement('div')
     otherMenu.className = "settings table-style col-4"
     let otherHeader = document.createElement("div")
@@ -553,12 +560,14 @@ async function prepareSettings() {
     otherMenu.appendChild(createCheckbox("attrBonus", "Show attribute bonus", "setting", changeClassDisplay.bind(null, 'attr_bonus', 'attrBonus', 'inline-block')))
     otherMenu.appendChild(createCheckbox("quickQuest", "Show quest re-roll/reduce buttons", "setting", changeClassDisplay.bind(null, 'left-quest-action', 'quickQuest', 'table-row')))
     otherMenu.appendChild(createCheckbox("showQP", "Show quest points (updates on quest completion)", "setting", changeClassDisplay.bind(null, 'qp_row', 'showQP', 'table-row')))
+    otherMenu.appendChild(document.createElement('br'))
     otherMenu.appendChild(createCheckbox("dhTimer", "Show remaining DH timer", "setting", changeDHTimerSetting))
+    otherMenu.appendChild(createCheckbox("enterRift", "Show enter rift button", "setting purple", toggleEnterRift))
     otherMenu.appendChild(document.createElement('br'))
     otherMenu.appendChild(createCheckbox("creditStore", "Show store link next to credits", "setting", changeClassDisplay.bind(null, 'cstore_btn', 'creditStore', 'inline-block')))
     otherMenu.appendChild(createSelect("creditStoreTab", "Which tab credit store link will open", "setting", [
         { value: "purchase", text: "Purchase Credits" },
-        { value: "s", text: "s" },
+        { value: "boosts", text: "Boosts" },
         { value: "upgrades", text: "Autos" },
         { value: "misc", text: "Misc" },
         { value: "lp", text: "Loyalty Points" },
@@ -679,6 +688,7 @@ function prepareClanChannel() {
     let button = document.createElement('input')
 
     input.id = "clan_chat_input"
+    input.className = "clan_chat_input"
     input.maxlength = 400
     input.autocomplete = false
     input.type = "text"
@@ -783,16 +793,19 @@ function processChatRows(chatRows) {
             }
         }
 
+
         //Check for global
         if (message.match(/^Global: /)) {
             let pattern = new RegExp('^Global: ' + username, 'g')
             //Is it yours?
             if (message.match(pattern)) {
+                if (settings.shortenRiftKill && !isFirstChatMutation)
+                    shortenRiftKillMessage(row)
                 if (settings.notifMyGlobal && !isFirstChatMutation)
                     notify(message, "cheerful")
             } else {
                 //And if it's not your global, it must be someone else's
-                if (message.match(/^Global: (.*) (has|gained|rolled|goes|found) /)) {
+                if (message.match(/^Global: (.*) (has|gained|rolled|goes|found|awarded|completed) /)) {
                     //Let's hide other player gloals
                     if (message.match(/Global: (.+) has closed with a Riftscore multiplier/) === null &&
                         message.match(/Global: (.+) has opened! The/) === null) {
@@ -829,16 +842,8 @@ function processChatRows(chatRows) {
                     riftActive = false
                 }
 
-                //Shorten rift kill message
-                //Global: ZN Tanar (Level 150,000) landed the killing blow on the Hades [7] (Level 150,000) obtaining 1 Soul Shard(s) and 1,156 Riftscore! An additional x1.8 Riftscore multiplier was added to the Rift!
-                //Global: ZN Tanar (150,000) killed Hades [7] (150,000): 2 Shard(s), 1,156 Riftscore, x1.8 multiplier!
-                if (settings.shortenRiftKill) {
-                    let regex = /Global: (.+) \(Level (.+)\) landed the killing blow on the (.+) \(Level (.+)\) obtaining (.+) Soul Shard\(s\) and (.+) Riftscore! An additional (.+) Riftscore multiplier was added to the Rift!/
-                    let match = regex.exec(row.childNodes[0].lastChild.textContent)
-                    if (match) {
-                        row.childNodes[0].lastChild.innerHTML = 'Global: <a href="javascript:m(' + match[1] + ')">' + match[1] + '</a> (' + match[2] + ') killed ' + match[3] + ' (' + match[4] + '): ' + match[5] + ' Shard(s), ' + match[6] + ' Riftscore, ' + match[7] + ' multiplier!'
-                    }
-                }
+                if (settings.shortenRiftKill)
+                    shortenRiftKillMessage(row)
 
                 //Do we need to update inner dh timer?
                 if (settings.dhTimer && message.match(/Global: Everyone will receive (Double Haste|Double|Haste)/i))
@@ -1017,7 +1022,7 @@ function processChatRows(chatRows) {
                 }
             }
 
-            //Hide chat row caused by our dh query
+            //Hide chat row caused by our stats query
             if (hide || isFirstChatMutation) {
                 row.dataset.internalCommand = "true"
                 row.style.display = "none"
@@ -1049,6 +1054,17 @@ function processChatRows(chatRows) {
     }
 }
 
+function shortenRiftKillMessage(row) {
+    //Shorten rift kill message
+    //Global: ZN Tanar (Level 150,000) landed the killing blow on the Hades [7] (Level 150,000) obtaining 1 Soul Shard(s) and 1,156 Riftscore! An additional x1.8 Riftscore multiplier was added to the Rift!
+    //Global: ZN Tanar (150,000) killed Hades [7] (150,000): 2 Shard(s), 1,156 Riftscore, x1.8 multiplier!
+    let shortenRiftKillRegex = /Global: (.+) \(Level (.+)\) landed the killing blow on the (.+) \(Level (.+)\) obtaining (.+) Soul Shard\(s\) and (.+) Riftscore! An additional (.+) Riftscore multiplier was added to the Rift!/
+    let match = shortenRiftKillRegex.exec(row.childNodes[0].lastChild.textContent)
+    if (match) {
+        message = 'Global: <a href="javascript:m(' + match[1] + ')">' + match[1] + '</a> (' + match[2] + ') killed ' + match[3] + ' (' + match[4] + '): ' + match[5] + ' Shard(s), ' + match[6] + ' Riftscore, ' + match[7] + ' multiplier!'
+        row.childNodes[0].lastChild.innerHTML = message
+    }
+}
 
 function prepareEquipment() {
     if (equipmentCache.length !== 8) {
@@ -1554,7 +1570,7 @@ function addStyleSheet() {
     let head = document.getElementsByTagName('head')[0]
     head.appendChild(style)
     sheet = style.sheet
-    sheet.insertRule('.col-4 {width: 32.5%;}', sheet.cssRules.length)
+    sheet.insertRule('.col-4 {width: 32.6%;}', sheet.cssRules.length)
     sheet.insertRule('.col-100 {width: 100%;}', sheet.cssRules.length)
     sheet.insertRule('.links {padding: 4px 4px;}', sheet.cssRules.length)
     sheet.insertRule('.right {text-align: right;}', sheet.cssRules.length)
@@ -1565,7 +1581,7 @@ function addStyleSheet() {
     sheet.insertRule('.settings label {margin-left: 3px;}', sheet.cssRules.length)
     sheet.insertRule('.settings select {width: 100%; font-size: 11px;}', sheet.cssRules.length)
     sheet.insertRule('.setting {padding: 2px 2px 0;}', sheet.cssRules.length)
-    sheet.insertRule('.table-style {argin: 3px 0px 0px 3px; background: none repeat scroll 0% 0% #2B2B2B; border: 1px solid #111;}', sheet.cssRules.length)
+    sheet.insertRule('.table-style {margin: 3px 0px 0px 3px; background: none repeat scroll 0% 0% #2B2B2B; border: 1px solid #111;}', sheet.cssRules.length)
     sheet.insertRule('#chat_table2 {width: 754px;}', sheet.cssRules.length)
     sheet.insertRule('#clan_chat_input {width: 700px; margin: 3px 0px 0px 3px;}', sheet.cssRules.length)
     sheet.insertRule('#gemid, small.xx-small {font-size: xx-small;}', sheet.cssRules.length)
@@ -1602,6 +1618,15 @@ function toggleHeader() {
     } else {
         header.style.display = "block"
         changeChannelVisibility('chat3', 'hideHeader')
+    }
+}
+
+function toggleEnterRift() {
+    let enterRift = document.getElementById("enterRift")
+    if (settings.enterRift) {
+        enterRift.style.display = "table-row"
+    } else {
+        enterRift.style.display = "none"
     }
 }
 
