@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         HeroesRPG Extension
 // @namespace    https://github.com/dolioz/hrpgext
-// @version      1.8.2
+// @version      1.8.3
 // @description  Improves UI, does not automate gameplay
 // @downloadURL  https://github.com/Dolioz/hrpgext/raw/master/HRPGExtension.user.js
 // @updateURL    https://github.com/Dolioz/hrpgext/raw/master/HRPGExtension.user.js
@@ -16,9 +16,9 @@
 
 // DISCLAIMER: CHANGING THIS SCRIPT TO AUTOMATE GAMEPLAY IS AGAINST THE RULES
 
+hextClanMemberCache = []
 let notifSound, cheerfulSound, eerieSound, username, version, lastVersion
 let lastChatRow = 0, lastLogRow = 0, isFirstChatMutation = true
-let clanMemberCache, equipmentCache
 let dhInterval = null, boostTime = { double: 0, haste: 0 }
 let skillTuples = [
     { ids: [1, 2, 3], ratio: [1, 2.67, 6] },
@@ -50,14 +50,18 @@ let settings = null, defaultSettings = {
     notifClanMessage: true,
     notifClanGlobal: false,
 
-    hideOthersGlobal: false,
-    markGlobalsRead: true,
     shortenRiftKill: true,
+    hideOthersGlobal: false,
+    hideClanMembersGlobal: false,
+    markGlobalsRead: true,
+
     clanChannel: true,
     clanHide: false,
+
     usernameClick: true,
     urlToLink: true,
     clickableForum: true,
+
     increaseChat: true,
 
     startupGathering: false,
@@ -73,8 +77,9 @@ let settings = null, defaultSettings = {
     attrBonus: false,
     quickQuest: false,
     showQP: true,
+
     dhTimer: true,
-    enterRift: true,
+    enterRift: false,
 
     creditStore: false,
     creditStoreTab: "purchase",
@@ -88,7 +93,7 @@ let settings = null, defaultSettings = {
     if (document.getElementById('main-stats') === null)
         return //Game window not found
 
-    //Update notification
+    //Update notification in chat
     version = GM.info.script.version
     lastVersion = await GM.getValue("HExt_lastVersion", '1.0.0')
     if (lastVersion < version) {
@@ -96,14 +101,12 @@ let settings = null, defaultSettings = {
         setTimeout(notifyNewVersion, 750) //Notify users about new features after chat is loaded
     }
 
-    //Show version
+    //Show version in footer
     document.getElementById('footer').textContent += "  ~~HExt v" + version + "~~"
 
     //Restore user settings
     settings = await GM.getValue("HExt_settings", defaultSettings)
     stats = await GM.getValue("HExt_stats", startingStats)
-    clanMemberCache = await GM.getValue("HExt_clanMemberCache", {})
-    equipmentCache = await GM.getValue("HExt_equipmentCache", [])
 
     addStyleSheet()
     toggleHeader()
@@ -124,7 +127,6 @@ let settings = null, defaultSettings = {
     document.body.appendChild(eerieSound)
 
     username = document.querySelector("#s_cname").textContent
-    unsafeWindow.cachePlayerData() //Will fetch name, id, clanId and clanName
 
     //Prepare channels
     channelBtnContainer = document.getElementById('channels')
@@ -144,7 +146,8 @@ let settings = null, defaultSettings = {
     prepareSettings()
     createHeaderMenu()
     prepareClanChannel()
-    prepareEquipment()
+    cachePlayerClanId()
+    await cacheClanMember()
 
     if (settings.startupGathering) {
         let select = document.getElementById('center_select')
@@ -274,7 +277,7 @@ let settings = null, defaultSettings = {
 
     //Increase chat row limit
     if (settings.increaseChat)
-        unsafeWindow.chatsize = 300
+        unsafeWindow.chatsize = 1000
 
     addClearLogButton()
 
@@ -300,7 +303,6 @@ let settings = null, defaultSettings = {
     let observer = new MutationObserver(function (mutations, observer) {
         for (let i = 0, mutation; mutation = mutations[i]; i++) {
             //Ignore mutations when we are editing elements
-            //console.log(mutation.target)
             try {
                 if (!mutation.isBeingEdited()) {
 
@@ -315,7 +317,8 @@ let settings = null, defaultSettings = {
                         lastChatRow = parseInt(chatRows[0].id.substring(6)) //Mark the first row as the last checked row
 
                         //Avoid notifications on first load
-                        if (isFirstChatMutation) isFirstChatMutation = false
+                        if (isFirstChatMutation)
+                            isFirstChatMutation = false
                     }
 
                     //New log rows
@@ -528,7 +531,8 @@ async function prepareSettings() {
     chatHeader.className = "category-header"
     chatMenu.appendChild(chatHeader)
     chatMenu.appendChild(createCheckbox("shortenRiftKill", "Shorten rift kill globals", "setting g-green"))
-    chatMenu.appendChild(createCheckbox("hideOthersGlobal", "Hide most other player globals", "setting g-green", refreshChatVisibility))
+    chatMenu.appendChild(createCheckbox("hideOthersGlobal", "Hide most non clan member globals", "setting g-green", refreshChatVisibility))
+    chatMenu.appendChild(createCheckbox("hideClanMembersGlobal", "Hide most clan member globals", "setting g-green", refreshChatVisibility))
     chatMenu.appendChild(createCheckbox("markGlobalsRead", "Exclude most globals from unread count", "setting g-green"))
     chatMenu.appendChild(document.createElement('br'))
     chatMenu.appendChild(createCheckbox("clanChannel", "Separate clan channel", "setting yellow", changeChannelVisibility.bind(null, 'chat2', 'clanChannel')))
@@ -538,7 +542,7 @@ async function prepareSettings() {
     chatMenu.appendChild(createCheckbox("urlToLink", "Turn URLs into clickable links", "setting l-blue"))
     chatMenu.appendChild(createCheckbox("clickableForum", "Turn URLs into links in forum", "setting l-blue"))
     chatMenu.appendChild(document.createElement('br'))
-    chatMenu.appendChild(createCheckbox("increaseChat", "Increase chat size limit to 300", "setting", changeChatSizeLimit))
+    chatMenu.appendChild(createCheckbox("increaseChat", "Increase chat size limit to 1000", "setting", changeChatSizeLimit))
     settingsContainer.appendChild(chatMenu)
 
     let otherMenu = document.createElement('div')
@@ -630,6 +634,8 @@ function refreshChatVisibility() {
     for (let i = 0, row; row = chatRows[i]; i++) {
         if (row.dataset.isOtherGlobal)
             row.style.display = settings.hideOthersGlobal ? 'none' : 'table-row'
+        if (row.dataset.isClanMemberGlobal)
+            row.style.display = settings.hideClanMembersGlobal ? 'none' : 'table-row'
         if (row.dataset.isClan)
             row.style.display = settings.clanHide ? 'none' : 'table-row'
     }
@@ -665,7 +671,7 @@ function changeClassDisplay(elementClass, settingName, display) {
 }
 
 function changeChatSizeLimit() {
-    unsafeWindow.chatsize = settings.increaseChat ? 300 : 100
+    unsafeWindow.chatsize = settings.increaseChat ? 1000 : 100
 }
 
 function changeDHTimerSetting() {
@@ -793,25 +799,35 @@ function processChatRows(chatRows) {
             }
         }
 
-
         //Check for global
         if (message.match(/^Global: /)) {
-            let pattern = new RegExp('^Global: ' + username, 'g')
             //Is it yours?
+            let pattern = new RegExp('^Global: ' + username, 'g')
             if (message.match(pattern)) {
-                if (settings.shortenRiftKill && !isFirstChatMutation)
+                if (settings.shortenRiftKill)
                     shortenRiftKillMessage(row)
                 if (settings.notifMyGlobal && !isFirstChatMutation)
                     notify(message, "cheerful")
             } else {
                 //And if it's not your global, it must be someone else's
-                if (message.match(/^Global: (.*) (has|gained|rolled|goes|found|awarded|completed) /)) {
-                    //Let's hide other player gloals
-                    if (message.match(/Global: (.+) has closed with a Riftscore multiplier/) === null &&
-                        message.match(/Global: (.+) has opened! The/) === null) {
-                        row.dataset.isOtherGlobal = true
-                        if (settings.hideOthersGlobal)
-                            row.style.display = "none"
+                let regex = /^Global: (.*?) (has|gained|rolled|goes|found|is)/
+                if (message.match(regex)) {
+                    if (message.match(/^Global: (.+) has closed with a Riftscore multiplier/) === null &&
+                        message.match(/^Global: (.+) has opened! The/) === null &&
+                        message.match(/^Global: (.+) will close in/) === null) {
+
+                        //Let's hide other player gloals
+                        let match = regex.exec(message)
+
+                        if (hextClanMemberCache.includes(match[1])) {
+                            row.dataset.isClanMemberGlobal = true
+                            if (settings.hideClanMemberGlobal)
+                                row.style.display = "none"
+                        } else {
+                            row.dataset.isOtherGlobal = true
+                            if (settings.hideOthersGlobal)
+                                row.style.display = "none"
+                        }
                     }
                 }
 
@@ -846,7 +862,7 @@ function processChatRows(chatRows) {
                     shortenRiftKillMessage(row)
 
                 //Do we need to update inner dh timer?
-                if (settings.dhTimer && message.match(/Global: Everyone will receive (Double Haste|Double|Haste)/i))
+                if (settings.dhTimer && message.match(/^Global: Everyone will receive (Double Haste|Double|Haste)/i))
                     sendCommand('dh')
             }
         }
@@ -858,7 +874,7 @@ function processChatRows(chatRows) {
                 notify(message)
 
             //Do we need to update inner dh timer?
-            if (settings.dhTimer && message.match(/Clan Global: Your Clan has activated /))
+            if (settings.dhTimer && message.match(/^Clan Global: Your Clan has activated /))
                 sendCommand('dh')
 
             //Add copy to clan tab
@@ -901,17 +917,21 @@ function processChatRows(chatRows) {
             clone.id = "ct2_tr" + clone.id.substring(6)
             clanChat.insertBefore(clone, clanChat.firstChild)
 
-            //Open clan member profile when click on username in clan tab
-            let cloneLink = clone.querySelector('a')
-            if (cloneLink !== null) {
-                if (cloneLink.href.indexOf("javascript:m") === 0) {
-                    cloneLink.href = "javascript:" //Disable default behavior
-                    cloneLink.addEventListener("click", openClanMemberProfile)
-                    cloneLink.addEventListener("contextmenu", function (e) {
-                        e.preventDefault()
-                        unsafeWindow.viewPlayer(this.textContent)
-                        return false
-                    })
+            //Make right click listener for usernames in clan channel
+            if (settings.usernameClick) {
+                let link = clone.querySelector('a')
+                if (link !== null) {
+                    if (link.href.indexOf("javascript:m") === 0) {
+                        link.href = "javascript:" //Disable default behavior
+                        link.addEventListener("click", function (e) {
+                            unsafeWindow.m(this.textContent)
+                        })
+                        link.addEventListener("contextmenu", function (e) {
+                            e.preventDefault()
+                            unsafeWindow.viewPlayer(this.textContent)
+                            return false
+                        })
+                    }
                 }
             }
 
@@ -1058,35 +1078,11 @@ function shortenRiftKillMessage(row) {
     //Shorten rift kill message
     //Global: ZN Tanar (Level 150,000) landed the killing blow on the Hades [7] (Level 150,000) obtaining 1 Soul Shard(s) and 1,156 Riftscore! An additional x1.8 Riftscore multiplier was added to the Rift!
     //Global: ZN Tanar (150,000) killed Hades [7] (150,000): 2 Shard(s), 1,156 Riftscore, x1.8 multiplier!
-    let shortenRiftKillRegex = /Global: (.+) \(Level (.+)\) landed the killing blow on the (.+) \(Level (.+)\) obtaining (.+) Soul Shard\(s\) and (.+) Riftscore! An additional (.+) Riftscore multiplier was added to the Rift!/
+    let shortenRiftKillRegex = /^Global: (.+) \(Level (.+)\) landed the killing blow on the (.+) \(Level (.+)\) obtaining (.+) Soul Shard\(s\) and (.+) Riftscore! An additional (.+) Riftscore multiplier was added to the Rift!/
     let match = shortenRiftKillRegex.exec(row.childNodes[0].lastChild.textContent)
     if (match) {
         message = 'Global: <a href="javascript:m(' + match[1] + ')">' + match[1] + '</a> (' + match[2] + ') killed ' + match[3] + ' (' + match[4] + '): ' + match[5] + ' Shard(s), ' + match[6] + ' Riftscore, ' + match[7] + ' multiplier!'
         row.childNodes[0].lastChild.innerHTML = message
-    }
-}
-
-function prepareEquipment() {
-    if (equipmentCache.length !== 8) {
-        let brightSelect = document.getElementById('bright_select')
-        brightSelect.selectedIndex = 1
-        unsafeWindow.bRightSelect()
-        setTimeout(function () {
-            let equipmentRows = document.querySelectorAll("#bright_content tr")
-            let equipmentCache = []
-            for (let i = 0, item; item = equipmentRows[i]; i++) {
-                if (typeof item.id !== "undefined" && item.id !== "")
-                    equipmentCache.push(item.id.substring(5))
-            }
-
-            if (equipmentCache.length === 8)
-                GM.setValue("HExt_equipmentCache", equipmentCache)
-            else
-                console.log("HExt couldn't fetch equipment ids")
-
-            brightSelect.selectedIndex = 0
-            unsafeWindow.bRightSelect()
-        }, 650)
     }
 }
 
@@ -1437,42 +1433,9 @@ function notifyNewVersion() {
     if (chat !== null) {
         let tr = document.createElement('tr')
         tr.id = "ct1_tr" + unsafeWindow.chatid1
-        tr.innerHTML = '<td>[ <span class="blue">HRPG Extension has been updated to v' + version + ', read about changes from <a href="javascript:viewThread(2, 944);">forum</a></span> ]</td>'
+        tr.innerHTML = '<td>[ <span class="blue">HRPG Extension has been updated to v' + version + ', read about changes in the <a href="javascript:viewThread(2, 944);">forum</a></span> ]</td>'
         chat.insertBefore(tr, chat.firstElementChild)
         unsafeWindow.chatid1++
-    }
-}
-
-function openClanMemberProfile(e) {
-    let display = document.getElementById("popup").style.display
-    if (display !== "none" && display !== "")
-        return
-
-    // Try to find user clan member id from cache
-    if (typeof clanMemberCache[this.textContent] !== "undefined") {
-        unsafeWindow.clanViewMember(clanMemberCache[this.textContent])
-        document.getElementById('overlay').style.display = "block"
-        document.getElementById('popup').style.display = "block"
-    } else {
-        // Wait for clan member list popup to open in background
-        // Cache results as following way to retrieve member id is quite unstable
-        unsafeWindow.clanMenu('members')
-        setTimeout((function () {
-            let members = document.querySelectorAll("#popup-content a")
-            for (let k = 0, member; member = members[k]; k++) {
-                let regex = /javascript:clanViewMember\((\d+)\)/
-                let match = regex.exec(member.href)
-                if (match !== null) {
-                    clanMemberCache[this.textContent] = match[1]
-                    if (member.textContent.indexOf(this.textContent) === 0) {
-                        unsafeWindow.clanViewMember(match[1])
-                        document.getElementById('overlay').style.display = "block"
-                        document.getElementById('popup').style.display = "block"
-                    }
-                }
-            }
-            GM.setValue("HExt_clanMemberCache", clanMemberCache)
-        }).bind(this), 600)
     }
 }
 
@@ -1623,11 +1586,23 @@ function toggleHeader() {
 
 function toggleEnterRift() {
     let enterRift = document.getElementById("enterRift")
-    if (settings.enterRift) {
+    if (settings.enterRift)
         enterRift.style.display = "table-row"
-    } else {
+    else
         enterRift.style.display = "none"
-    }
+}
+
+function cacheClanMember() {
+    return new Promise(function (resolve, reject) {
+        $.post('clan.php', { mod: 'members' }, function (data) {
+            let regex = /javascript:clanViewMember\(\d+\)">(.*?)</g
+            let matches = []
+            while (matches = regex.exec(data.v)) {
+                hextClanMemberCache.push(matches[1])
+            }
+            resolve("Clan cache initiliazed")
+        }, 'json');
+    });
 }
 
 function applyInjections() {
@@ -1677,15 +1652,15 @@ function send_chat_command(command) {
     cmdFlags[command] = true
     $.post('chat.php', {mod:'send', msg:'/'+command}, function(data) {
         if(!data.err) {
-            if(data.addignore) {
-                ignored.push(data.addignore);
-            }
-            if(data.remignore) {
-                ignored.splice(ignored.indexOf(data.remignore, 1));
-            }
-            chatinactivity = 0;
-            update_chat(0);
-        } else { console.log(data.err); }
+            if(data.addignore)
+                ignored.push(data.addignore)
+            if(data.remignore)
+                ignored.splice(ignored.indexOf(data.remignore, 1))
+            chatinactivity = 0
+            update_chat(0)
+        } else {
+            console.log(data.err)
+        }
     }, 'json');
 }
 
@@ -1706,79 +1681,69 @@ function getSkillCost(id) {
     return new Promise(function(resolve, reject) {
         $.post('skills.php', {mod:'train', id:id, confirm:0}, function(data) {
             if(!data.err) {
-                let match1 = data.html.match(/Train 1x<\\/a> \\(([\\d,]+) SP\\)/);
-                let match2 = data.html.match(/Train 10x<\\/a> \\(([\\d,]+) SP\\)/);
+                let match1 = data.html.match(/Train 1x<\\/a> \\(([\\d,]+) SP\\)/)
+                let match2 = data.html.match(/Train 10x<\\/a> \\(([\\d,]+) SP\\)/)
                 if(match1 && match2)
                     resolve({id: id, cost1: match1[1], cost10: match2[1], html: data.html})
                 else
-                    resolve("No train cost found: player level is too low");
+                    resolve("No train cost found: player level is too low")
             } else {
-                resolve(data.err); //There is problem as Promise.all fails when we get reject and I don't want to write some Promise.any function so I'll just pass it as resolve
+                resolve(data.err) //There is problem as Promise.all fails when we get reject and I don't want to write some Promise.any function so I'll just pass it as resolve
             }
         }, 'json');
     });
 }
 
-function cachePlayerData(callback) {
-    let playerId = $('#s_cname > a').attr('href')
-    hextPlayerName = $('#s_cname > a').text()
-    let match = playerId.match(/javascript:viewPlayer\\((\\d+)\\)/)
-    if(match) hextPlayerId = match[1]
+hextPlayerClanId = null
 
-    if(typeof hextPlayerId !== "undefined") {
-        $.post('misc.php', {mod:'viewplayer', id:hextPlayerId, type:1}, function(data) {
-            let match = data.v.match(/href="javascript:viewClan\\((\\d+)\\)">(.+)<\\/a>/)
-            if(match) {
-                hextPlayerClanId = match[1]
-                hextPlayerClanName = match[2]
-            } else {
-                hextPlayerClanId = null
-                hextPlayerClanName = ""
-            }
-            if(typeof callback === "function")
-                callback()
-        }, 'json');
+function cachePlayerClanId() {
+    if(hextPlayerClanId === null) {
+        let playerId = $('#s_cname > a').attr('href')
+        let match = playerId.match(/javascript:viewPlayer\\((\\d+)\\)/)
+        if(match) playerId = match[1]
+
+        if(typeof playerId !== "undefined") {
+            $.post('misc.php', {mod:'viewplayer', id:playerId, type:1}, function(data) {
+                let match = data.v.match(/href="javascript:viewClan\\((\\d+)\\)">(.+)<\\/a>/)
+                if(match)
+                    hextPlayerClanId = match[1]
+                else
+                    hextPlayerClanId = null
+            }, 'json');
+        }
     }
 }
 
 function viewClanProfile() {
-    if(typeof hextPlayerClanId === "undefined") {
-        cachePlayerData(viewClanProfileReal)
-    } else {
-        viewClanProfileReal()
-    }
-}
-
-function viewClanProfileReal() {
-    showPopup();
+    showPopup()
 
     if(hextPlayerClanId !== null) {
         $.post('misc.php', {mod:'viewclan', id:hextPlayerClanId}, function(data) {
-            $('#popup-title').html('Clan Profile');
-            $('#popup-content').html(data.v);
-            $('#popup-content').append('<br><br>[<a href="javascript:clan()">Back</a>]');
+            $('#popup-title').html('Clan Profile')
+            $('#popup-content').html(data.v)
+            $('#popup-content').append('<br><br>[<a href="javascript:clan()">Back</a>]')
         }, 'json');
     }
 }
 
-let updateStatsTimeout = null;
+let updateStatsTimeout = null
 equip = (function() {
-    let parent_function = equip;
+    let parent_function = equip
     return function() {
-        parent_function.apply(this, arguments);
-
-        if(updateStatsTimeout !== null) clearTimeout(updateStatsTimeout);
-        updateStatsTimeout = setTimeout(send_chat_command.bind(null, 'stats'), 1000);
+        parent_function.apply(this, arguments)
+        if(updateStatsTimeout !== null)
+            clearTimeout(updateStatsTimeout)
+        updateStatsTimeout = setTimeout(send_chat_command.bind(null, 'stats'), 1000)
     };
 })();
 
 equipAccessory = (function() {
-    let parent_function = equipAccessory;
+    let parent_function = equipAccessory
     return function() {
-        parent_function.apply(this, arguments);
-
-        if(updateStatsTimeout !== null) clearTimeout(updateStatsTimeout);
-        updateStatsTimeout = setTimeout(send_chat_command.bind(null, 'stats'), 1000);
+        parent_function.apply(this, arguments)
+        if(updateStatsTimeout !== null)
+            clearTimeout(updateStatsTimeout)
+        updateStatsTimeout = setTimeout(send_chat_command.bind(null, 'stats'), 1000)
     };
 })();
 `

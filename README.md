@@ -5,6 +5,17 @@ Initially created by ApDea and now forked to continue developement.
 
 ## Changelog
 
+### v1.8.3
+
+[Features]
+- Changed setting from "Hide most other player globals" to "Hide most non clan member globals"
+- New option to hide most clan member globals
+
+[Polishing]
+- Increased chat size option from 300 to 1000
+- Set default setting for enter rift button to deactivated
+- Removed unstable feature "click player in clan chat to open clan profile"
+
 ### v1.8.2
 
 [Features]
