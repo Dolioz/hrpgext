@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         HeroesRPG Extension
 // @namespace    https://github.com/dolioz/hrpgext
-// @version      1.8.3
+// @version      1.8.4
 // @description  Improves UI, does not automate gameplay
 // @downloadURL  https://github.com/Dolioz/hrpgext/raw/master/HRPGExtension.user.js
 // @updateURL    https://github.com/Dolioz/hrpgext/raw/master/HRPGExtension.user.js
@@ -75,8 +75,10 @@ let settings = null, defaultSettings = {
 
     showPower: true,
     attrBonus: false,
-    quickQuest: false,
     showQP: true,
+    hideBattleQuest: false,
+    hideGatherQuest: false,
+    quickQuest: false,
 
     dhTimer: true,
     enterRift: false,
@@ -109,7 +111,6 @@ let settings = null, defaultSettings = {
     stats = await GM.getValue("HExt_stats", startingStats)
 
     addStyleSheet()
-    toggleHeader()
     applyInjections()
 
     //Notification sounds
@@ -145,6 +146,7 @@ let settings = null, defaultSettings = {
 
     prepareSettings()
     createHeaderMenu()
+    toggleHeader()
     prepareClanChannel()
     cachePlayerClanId()
     await cacheClanMember()
@@ -199,14 +201,16 @@ let settings = null, defaultSettings = {
     for (let i = 0, row; row = leftRows[i]; i++) {
         //Enable quick action buttons for quests in left menu
         if (row.textContent.indexOf('Battle:') === 0) {
+            row.style.display = settings.hideBattleQuest ? 'none' : 'table-row'
             let tr = document.createElement('tr')
-            tr.className = "left-quest-action"
+            tr.className = "left-quest-action-battle"
             tr.innerHTML = '<td></td><td class="greytext"><span>[<a href="javascript:questReroll(1)">Re-roll</a>] [<a href="javascript:questReduce(1)">Reduce</a>]</span></td>'
             tr.style.display = settings.quickQuest ? 'table-row' : 'none'
             row.parentNode.insertBefore(tr, row.nextElementSibling)
         } else if (row.textContent.indexOf('Gather:') === 0) {
+            row.style.display = settings.hideGatherQuest ? 'none' : 'table-row'
             let tr = document.createElement('tr')
-            tr.className = "left-quest-action"
+            tr.className = "left-quest-action-gather"
             tr.innerHTML = '<td></td><td class="greytext"><span>[<a href="javascript:questReroll(2)">Re-roll</a>] [<a href="javascript:questReduce(2)">Reduce</a>]</span></td>'
             tr.style.display = settings.quickQuest ? 'table-row' : 'none'
             row.parentNode.insertBefore(tr, row.nextElementSibling)
@@ -562,8 +566,10 @@ async function prepareSettings() {
     otherMenu.appendChild(document.createElement('br'))
     otherMenu.appendChild(createCheckbox("showPower", "Show power and armor", "setting", changeClassDisplay.bind(null, 'power_row', 'showPower', 'table-row')))
     otherMenu.appendChild(createCheckbox("attrBonus", "Show attribute bonus", "setting", changeClassDisplay.bind(null, 'attr_bonus', 'attrBonus', 'inline-block')))
-    otherMenu.appendChild(createCheckbox("quickQuest", "Show quest re-roll/reduce buttons", "setting", changeClassDisplay.bind(null, 'left-quest-action', 'quickQuest', 'table-row')))
     otherMenu.appendChild(createCheckbox("showQP", "Show quest points (updates on quest completion)", "setting", changeClassDisplay.bind(null, 'qp_row', 'showQP', 'table-row')))
+    otherMenu.appendChild(createCheckbox("hideBattleQuest", "Hide battle quests", "setting", changeQuestVisibility))
+    otherMenu.appendChild(createCheckbox("hideGatherQuest", "Hide gather quests", "setting", changeQuestVisibility))
+    otherMenu.appendChild(createCheckbox("quickQuest", "Show quest re-roll/reduce buttons", "setting", changeQuestVisibility))
     otherMenu.appendChild(document.createElement('br'))
     otherMenu.appendChild(createCheckbox("dhTimer", "Show remaining DH timer", "setting", changeDHTimerSetting))
     otherMenu.appendChild(createCheckbox("enterRift", "Show enter rift button", "setting purple", toggleEnterRift))
@@ -647,11 +653,26 @@ function changeChannelVisibility(channelId, settingName) {
         chatButton.style.display = settings[settingName] ? 'inline-block' : 'none'
 }
 
-function changeQuickQuestVisibility() {
-    let rows = document.querySelectorAll('.left-quest-action')
-    for (let i = 0, row; row = rows[i]; i++) {
-        row.style.display = settings.quickQuest ? 'table-row' : 'none'
+function changeQuestVisibility() {
+    let leftRows = document.querySelectorAll('#main-stats > table > tbody > tr')
+    for (let i = 0, row; row = leftRows[i]; i++) {
+        if (row.textContent.indexOf('Battle:') === 0)
+            row.style.display = settings.hideBattleQuest ? 'none' : 'table-row'
+        else if (row.textContent.indexOf('Gather:') === 0)
+            row.style.display = settings.hideGatherQuest ? 'none' : 'table-row'
     }
+
+    let row = document.querySelector('.left-quest-action-battle')
+    if (settings.quickQuest && !settings.hideBattleQuest)
+        row.style.display = 'table-row'
+    else
+        row.style.display = 'none'
+
+    row = document.querySelector('.left-quest-action-gather')
+    if (settings.quickQuest && !settings.hideGatherQuest)
+        row.style.display = 'table-row'
+    else
+        row.style.display = 'none'
 }
 
 function changeClassDisplay(elementClass, settingName, display) {
@@ -704,7 +725,7 @@ function prepareClanChannel() {
     })
 
     button.type = "button"
-    button.value = "Send"
+    button.value = "Chat"
     button.addEventListener("click", sendClanMessage)
 
     form.appendChild(input)
@@ -713,7 +734,8 @@ function prepareClanChannel() {
 
     clanChat = document.createElement('table')
     clanChat.id = "chat_table2"
-    clanChat.className = "table-style"
+    clanChat.className = "chat_table2"
+    clanChat.className += " chat2 table tr td";
     clanChatContainer.appendChild(clanChat)
     if (!settings.clanChannel) {
         let clanChatButton = document.querySelector("[data-channel='chat2']")
@@ -821,7 +843,7 @@ function processChatRows(chatRows) {
 
                         if (hextClanMemberCache.includes(match[1])) {
                             row.dataset.isClanMemberGlobal = true
-                            if (settings.hideClanMemberGlobal)
+                            if (settings.hideClanMembersGlobal)
                                 row.style.display = "none"
                         } else {
                             row.dataset.isOtherGlobal = true
@@ -1433,7 +1455,9 @@ function notifyNewVersion() {
     if (chat !== null) {
         let tr = document.createElement('tr')
         tr.id = "ct1_tr" + unsafeWindow.chatid1
-        tr.innerHTML = '<td>[ <span class="blue">HRPG Extension has been updated to v' + version + ', read about changes in the <a href="javascript:viewThread(2, 944);">forum</a></span> ]</td>'
+        tr.innerHTML = '<td>[ <span class="blue">HRPG Extension has been updated to v' + version +
+            ', read about changes in the <a href="javascript:viewThread(2, 944);">forum</a> ' +
+            'or on <a href="https://github.com/dolioz/hrpgext" target="_blank">github</a></span>]</td>'
         chat.insertBefore(tr, chat.firstElementChild)
         unsafeWindow.chatid1++
     }
@@ -1443,7 +1467,9 @@ function addClearLogButton() {
     let log = document.querySelector("#chat10")
     let div = document.createElement('div')
     div.className = "table-style"
-    div.style.padding = "1px 2px"
+    div.style.padding = "2px 2px"
+    div.style.width = "748px"
+    div.style.height = "15px"
     let a = document.createElement('a')
     a.href = "javascript:"
     a.textContent = "[Clear log]"
@@ -1544,11 +1570,13 @@ function addStyleSheet() {
     sheet.insertRule('.settings label {margin-left: 3px;}', sheet.cssRules.length)
     sheet.insertRule('.settings select {width: 100%; font-size: 11px;}', sheet.cssRules.length)
     sheet.insertRule('.setting {padding: 2px 2px 0;}', sheet.cssRules.length)
-    sheet.insertRule('.table-style {margin: 3px 0px 0px 3px; background: none repeat scroll 0% 0% #2B2B2B; border: 1px solid #111;}', sheet.cssRules.length)
-    sheet.insertRule('#chat_table2 {width: 754px;}', sheet.cssRules.length)
-    sheet.insertRule('#clan_chat_input {width: 700px; margin: 3px 0px 0px 3px;}', sheet.cssRules.length)
+    sheet.insertRule('.table-style {margin: 3px 0px 0px 3px; background: none repeat scroll 0% 0% #2B2B2B; border: 1px solid #111111;}', sheet.cssRules.length)
+    sheet.insertRule('#chat_table2 {width: 754px; margin: 3px 0 0 3px; background: #2B2B2B; border: 1px solid #111111;}', sheet.cssRules.length)
+    sheet.insertRule('#chat2 table tr td {padding: 0px; color: #FFFFFF; max - width: 754px; overflow - x: hidden;}', sheet.cssRules.length)
+    sheet.insertRule('#clan_chat_input {width: 700px; margin: 3px 4px 0px 3px;}', sheet.cssRules.length)
     sheet.insertRule('#gemid, small.xx-small {font-size: xx-small;}', sheet.cssRules.length)
-    sheet.insertRule('.left-quest-action {font-size: 10px; line-height: 1em;}', sheet.cssRules.length)
+    sheet.insertRule('.left-quest-action-battle {font-size: 10px; line-height: 1em;}', sheet.cssRules.length)
+    sheet.insertRule('.left-quest-action-gather {font-size: 10px; line-height: 1em;}', sheet.cssRules.length)
     sheet.insertRule('.g-green {color: #88FF88;}', sheet.cssRules.length)
     sheet.insertRule('.d-green {color: #00BB00;}', sheet.cssRules.length)
     sheet.insertRule('.purple  {color: #CC66CC;}', sheet.cssRules.length)

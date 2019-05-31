@@ -5,6 +5,18 @@ Initially created by ApDea and now forked to continue developement.
 
 ## Changelog
 
+### v1.8.4
+
+[Features]
+- New options to hide battle/gather quests
+
+[Bugfixing]
+- Toggle header after header creation
+- Fixed hiding clan member globals
+
+[Polishing]
+- CSS alignments for clan chat
+
 ### v1.8.3
 
 [Features]
