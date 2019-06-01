@@ -5,6 +5,11 @@ Initially created by ApDea and now forked to continue developement.
 
 ## Changelog
 
+### v1.8.5
+
+[Bugfixing]
+- Fixed quick quest initilization when battle or gather quests are hidden
+
 ### v1.8.4
 
 [Features]

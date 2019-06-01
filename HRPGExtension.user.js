@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         HeroesRPG Extension
 // @namespace    https://github.com/dolioz/hrpgext
-// @version      1.8.4
+// @version      1.8.5
 // @description  Improves UI, does not automate gameplay
 // @downloadURL  https://github.com/Dolioz/hrpgext/raw/master/HRPGExtension.user.js
 // @updateURL    https://github.com/Dolioz/hrpgext/raw/master/HRPGExtension.user.js
@@ -205,14 +205,20 @@ let settings = null, defaultSettings = {
             let tr = document.createElement('tr')
             tr.className = "left-quest-action-battle"
             tr.innerHTML = '<td></td><td class="greytext"><span>[<a href="javascript:questReroll(1)">Re-roll</a>] [<a href="javascript:questReduce(1)">Reduce</a>]</span></td>'
-            tr.style.display = settings.quickQuest ? 'table-row' : 'none'
+            if (settings.quickQuest && !settings.hideBattleQuest)
+                tr.style.display = 'table-row'
+            else
+                tr.style.display = 'none'
             row.parentNode.insertBefore(tr, row.nextElementSibling)
         } else if (row.textContent.indexOf('Gather:') === 0) {
             row.style.display = settings.hideGatherQuest ? 'none' : 'table-row'
             let tr = document.createElement('tr')
             tr.className = "left-quest-action-gather"
             tr.innerHTML = '<td></td><td class="greytext"><span>[<a href="javascript:questReroll(2)">Re-roll</a>] [<a href="javascript:questReduce(2)">Reduce</a>]</span></td>'
-            tr.style.display = settings.quickQuest ? 'table-row' : 'none'
+            if (settings.quickQuest && !settings.hideGatherQuest)
+                tr.style.display = 'table-row'
+            else
+                tr.style.display = 'none'
             row.parentNode.insertBefore(tr, row.nextElementSibling)
         } else if (row.textContent.indexOf('Financial') === 0) {
             financialHeaderRow = row
