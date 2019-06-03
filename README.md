@@ -5,6 +5,14 @@ Initially created by ApDea and now forked to continue developement.
 
 ## Changelog
 
+### v1.8.6
+
+[Features]
+- Chat: Treasure Chest and Lockpick drops are now colored (Rare, Epic, Legendary)
+- Log: Optional filter for low drops (Common, Fractured)
+- Log: Treasure Chest and Lockpick drops are now colored (Uncommon, Rare, Epic, Legendary)
+- Log: Gem drops are now colored
+
 ### v1.8.5
 
 [Bugfixing]
