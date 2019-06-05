@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         HeroesRPG Extension
 // @namespace    https://github.com/dolioz/hrpgext
-// @version      1.8.6
+// @version      1.8.7
 // @description  Improves UI, does not automate gameplay
 // @downloadURL  https://github.com/Dolioz/hrpgext/raw/master/HRPGExtension.user.js
 // @updateURL    https://github.com/Dolioz/hrpgext/raw/master/HRPGExtension.user.js
@@ -777,8 +777,14 @@ function processLogRows() {
         //Detect low drops
         if (message.match(/Common|Fractured/)) {
             row.dataset.isLowDrop = true
-            if (settings.hideLowDrops)
+            if (settings.hideLowDrops) {
                 row.style.display = settings.hideLowDrops ? 'none' : 'table-row'
+                //Exclude low drops from unread count on Log channel tab
+                unsafeWindow.chatcount10--
+                if (unsafeWindow.chatcount10 < 0)
+                    unsafeWindow.chatcount10 = 0
+                document.getElementById('chatcount10').textContent = (unsafeWindow.chatcount10 !== 0 ? " (" + unsafeWindow.chatcount10 + ")" : "")
+            }
         }
 
         //Color chests and lockpicks
@@ -825,14 +831,6 @@ function processLogRows() {
         } else if (message.match(regexAmethyst)) {
             let match = regexAmethyst.exec(message)
             row.childNodes[0].innerHTML = "<td><span class='time'>" + time + "</span> " + match[1] + "<span class='purple'>" + match[2] + "</span>" + match[3] + "</td>"
-        }
-
-        //Exclude low drops from unread count on Log channel tab
-        if (settings.hideLowDrops) {
-            unsafeWindow.chatcount10--
-            if (unsafeWindow.chatcount10 < 0)
-                unsafeWindow.chatcount10 = 0
-            document.getElementById('unsafeWindow.chatcount10').textContent = (unsafeWindow.chatcount10 !== 0 ? " (" + unsafeWindow.chatcount10 + ")" : "")
         }
     }
 
@@ -1247,7 +1245,10 @@ function updateDHTimer(keepTime) {
             else
                 timeStr = hours + "h " + minutes + "m"
         } else {
-            timeStr = days + "d " + hours + "h"
+            if (hours === 0)
+                timeStr = days + "d " + minutes + "m"
+            else
+                timeStr = days + "d " + hours + "h"
         }
     }
 

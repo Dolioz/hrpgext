@@ -5,6 +5,14 @@ Initially created by ApDea and now forked to continue developement.
 
 ## Changelog
 
+### v1.8.7
+
+[Bugfixing]
+- Log count with hidden low drops now shows the correct amount of new non hidden messages
+
+[Polishing]
+- Show 1d XXm instead of 1d 0h in DH timer when 1d < remainingDH < 1d1h
+
 ### v1.8.6
 
 [Features]
