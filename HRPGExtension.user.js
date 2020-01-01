@@ -809,7 +809,7 @@ function processLogRows() {
         if (message.match(/You have gained a level and rolled/)) {
             row.dataset.isLevelUp = true
             if (settings.hideLevelUps) {
-                row.style.display = settings.isLevelUp ? 'none' : 'table-row'
+                row.style.display = settings.hideLevelUps ? 'none' : 'table-row'
                 //Exclude low drops from unread count on Log channel tab
                 unsafeWindow.chatcount10--
                 if (unsafeWindow.chatcount10 < 0)
