@@ -5,6 +5,12 @@ Initially created by ApDea and now forked to continue developement.
 
 ## Changelog
 
+### v1.8.8
+
+[Features]
+- Log: Optional filter for uncommon drops (Uncommon, Chipped)
+- Log: Optional filter for level ups
+
 ### v1.8.7
 
 [Bugfixing]

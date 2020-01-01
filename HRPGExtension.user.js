@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         HeroesRPG Extension
 // @namespace    https://github.com/dolioz/hrpgext
-// @version      1.8.7
+// @version      1.8.8
 // @description  Improves UI, does not automate gameplay
 // @downloadURL  https://github.com/Dolioz/hrpgext/raw/master/HRPGExtension.user.js
 // @updateURL    https://github.com/Dolioz/hrpgext/raw/master/HRPGExtension.user.js
@@ -69,25 +69,27 @@ let settings = null, defaultSettings = {
     showClanProfile: true,
     compareTiers: false,
 
-    hideHeader: false,
+    hideHeader: true,
     fixedPopupHeader: true,
-    permanentScrollbar: false,
+    permanentScrollbar: true,
 
     showPower: true,
     attrBonus: false,
     showQP: true,
     hideBattleQuest: false,
-    hideGatherQuest: false,
-    quickQuest: false,
+    hideGatherQuest: true,
+    quickQuest: true,
 
     dhTimer: true,
-    enterRift: false,
+    enterRift: true,
 
-    creditStore: false,
-    creditStoreTab: "purchase",
+    creditStore: true,
+    creditStoreTab: "boosts",
 
     // log settings
-    hideLowDrops: true,
+    hideCommonDrops: true,
+    hideUncommonDrops: false,
+    hideLevelUps: false,
 };
 
 (async function () {
@@ -535,7 +537,9 @@ async function prepareSettings() {
     logHeader.textContent = "Log"
     logHeader.className = "category-header"
     chatMenu.appendChild(logHeader)
-    chatMenu.appendChild(createCheckbox("hideLowDrops", "Hide low drops (Common, Fractured)", "setting white", refreshDropVisibility))
+    chatMenu.appendChild(createCheckbox("hideCommonDrops", "Hide Common/Fractured drops", "setting white", refreshDropVisibility))
+    chatMenu.appendChild(createCheckbox("hideUncommonDrops", "Hide Uncommon/Chipped drops", "setting white", refreshDropVisibility))
+    chatMenu.appendChild(createCheckbox("hideLevelUps", "Hide level ups", "setting white", refreshDropVisibility))
     chatMenu.appendChild(document.createElement('br'))
     settingsContainer.appendChild(chatMenu)
 
@@ -774,11 +778,38 @@ function processLogRows() {
             notify(message)
         }
 
-        //Detect low drops
+        //Detect common drops
         if (message.match(/Common|Fractured/)) {
-            row.dataset.isLowDrop = true
-            if (settings.hideLowDrops) {
-                row.style.display = settings.hideLowDrops ? 'none' : 'table-row'
+            row.dataset.isCommonDrop = true
+            if (settings.hideCommonDrops) {
+                row.style.display = settings.hideCommonDrops ? 'none' : 'table-row'
+                //Exclude low drops from unread count on Log channel tab
+                unsafeWindow.chatcount10--
+                if (unsafeWindow.chatcount10 < 0)
+                    unsafeWindow.chatcount10 = 0
+                document.getElementById('chatcount10').textContent = (unsafeWindow.chatcount10 !== 0 ? " (" + unsafeWindow.chatcount10 + ")" : "")
+            }
+        }
+
+        //Detect uncommon drops
+        if (message.match(/Uncommon|Chipped/)) {
+            row.dataset.isUncommonDrop = true
+            if (settings.hideUncommonDrops) {
+                row.style.display = settings.hideUncommonDrops ? 'none' : 'table-row'
+                //Exclude low drops from unread count on Log channel tab
+                unsafeWindow.chatcount10--
+                if (unsafeWindow.chatcount10 < 0)
+                    unsafeWindow.chatcount10 = 0
+                document.getElementById('chatcount10').textContent = (unsafeWindow.chatcount10 !== 0 ? " (" + unsafeWindow.chatcount10 + ")" : "")
+            }
+        }
+
+
+        //Detect level ups
+        if (message.match(/You have gained a level and rolled/)) {
+            row.dataset.isLevelUp = true
+            if (settings.hideLevelUps) {
+                row.style.display = settings.isLevelUp ? 'none' : 'table-row'
                 //Exclude low drops from unread count on Log channel tab
                 unsafeWindow.chatcount10--
                 if (unsafeWindow.chatcount10 < 0)
@@ -1587,8 +1618,12 @@ function prepareLogChannel() {
 function refreshDropVisibility() {
     let chatRows = document.querySelectorAll('#chat_table10 tr')
     for (let i = 0, row; row = chatRows[i]; i++) {
-        if (row.dataset.isLowDrop)
-            row.style.display = settings.hideLowDrops ? 'none' : 'table-row'
+        if (row.dataset.isCommonDrop)
+            row.style.display = settings.hideCommonDrops ? 'none' : 'table-row'
+        if (row.dataset.isUncommonDrop)
+            row.style.display = settings.hideUncommonDrops ? 'none' : 'table-row'
+        if (row.dataset.isLevelUp)
+            row.style.display = settings.hideLevelUps ? 'none' : 'table-row'
     }
 }
 
