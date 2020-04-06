@@ -34,7 +34,7 @@ let skillTuples = [
 ]
 let channels = [], channelBtnContainer, clanChatContainer, clanChat, headerMenuContainer, settingsContainer
 let settings = null, defaultSettings = {
-    notifyPause: false,
+    playSound: true,
     notifMyGlobal: true,
     notifyPM: true,
     notifRift: true,
@@ -445,8 +445,8 @@ async function prepareSettings() {
     notifHeader.textContent = "Notifications"
     notifHeader.className = "category-header"
     notifMenu.appendChild(notifHeader)
-    notifMenu.appendChild(createCheckbox("notifyPause", "Pause all notifications", "setting bold"))
-    notifMenu.appendChild(createCheckbox("notifMyGlobal", "Notify my globals with cheerful sound", "setting g-green"))
+    notifMenu.appendChild(createCheckbox("playSound", "Enable sound notifications", "setting bold"))
+    notifMenu.appendChild(createCheckbox("notifMyGlobal", "Notify my globals", "setting g-green"))
     notifMenu.appendChild(createCheckbox("notifyPM", "Notify personal messages", "setting red"))
     notifMenu.appendChild(createCheckbox("notifRift", "Notify rift opening", "setting purple"))
     notifMenu.appendChild(createCheckbox("notifTrade", "Notify trade chat", "setting d-green"))
@@ -1549,16 +1549,15 @@ function refreshDropVisibility() {
 }
 
 function notify(message, sound) {
-    if (settings.notifyPause)
-        return
-
-    if (typeof sound === 'undefined') {
-        notifSound.play()
-    } else if (sound == "cheerful") {
-        cheerfulSound.volume = 0.6
-        cheerfulSound.play()
-    } else if (sound == "eerie") {
-        eerieSound.play()
+    if (settings.playSound) {
+        if (typeof sound === 'undefined') {
+            notifSound.play()
+        } else if (sound == "cheerful") {
+            cheerfulSound.volume = 0.6
+            cheerfulSound.play()
+        } else if (sound == "eerie") {
+            eerieSound.play()
+        }
     }
 
     let n = new Notification("Heroes RPG", {
