@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         HeroesRPG Extension
 // @namespace    https://github.com/dolioz/hrpgext
-// @version      1.8.4
+// @version      1.8.8
 // @description  Improves UI, does not automate gameplay
 // @downloadURL  https://github.com/Dolioz/hrpgext/raw/master/HRPGExtension.user.js
 // @updateURL    https://github.com/Dolioz/hrpgext/raw/master/HRPGExtension.user.js
@@ -47,7 +47,7 @@ let settings = null, defaultSettings = {
     notifyQuest: true,
     notifyCrafting: true,
     notifySales: true,
-    notifClanMessage: true,
+    notifClanMessage: false,
     notifClanGlobal: false,
 
     shortenRiftKill: true,
@@ -69,22 +69,27 @@ let settings = null, defaultSettings = {
     showClanProfile: true,
     compareTiers: false,
 
-    hideHeader: false,
+    hideHeader: true,
     fixedPopupHeader: true,
-    permanentScrollbar: false,
+    permanentScrollbar: true,
 
     showPower: true,
     attrBonus: false,
     showQP: true,
     hideBattleQuest: false,
-    hideGatherQuest: false,
-    quickQuest: false,
+    hideGatherQuest: true,
+    quickQuest: true,
 
     dhTimer: true,
-    enterRift: false,
+    enterRift: true,
 
-    creditStore: false,
-    creditStoreTab: "purchase",
+    creditStore: true,
+    creditStoreTab: "boosts",
+
+    // log settings
+    hideCommonDrops: true,
+    hideUncommonDrops: false,
+    hideLevelUps: false,
 };
 
 (async function () {
@@ -205,14 +210,20 @@ let settings = null, defaultSettings = {
             let tr = document.createElement('tr')
             tr.className = "left-quest-action-battle"
             tr.innerHTML = '<td></td><td class="greytext"><span>[<a href="javascript:questReroll(1)">Re-roll</a>] [<a href="javascript:questReduce(1)">Reduce</a>]</span></td>'
-            tr.style.display = settings.quickQuest ? 'table-row' : 'none'
+            if (settings.quickQuest && !settings.hideBattleQuest)
+                tr.style.display = 'table-row'
+            else
+                tr.style.display = 'none'
             row.parentNode.insertBefore(tr, row.nextElementSibling)
         } else if (row.textContent.indexOf('Gather:') === 0) {
             row.style.display = settings.hideGatherQuest ? 'none' : 'table-row'
             let tr = document.createElement('tr')
             tr.className = "left-quest-action-gather"
             tr.innerHTML = '<td></td><td class="greytext"><span>[<a href="javascript:questReroll(2)">Re-roll</a>] [<a href="javascript:questReduce(2)">Reduce</a>]</span></td>'
-            tr.style.display = settings.quickQuest ? 'table-row' : 'none'
+            if (settings.quickQuest && !settings.hideGatherQuest)
+                tr.style.display = 'table-row'
+            else
+                tr.style.display = 'none'
             row.parentNode.insertBefore(tr, row.nextElementSibling)
         } else if (row.textContent.indexOf('Financial') === 0) {
             financialHeaderRow = row
@@ -283,12 +294,12 @@ let settings = null, defaultSettings = {
     if (settings.increaseChat)
         unsafeWindow.chatsize = 1000
 
-    addClearLogButton()
+    prepareLogChannel()
 
     //Prepare chat, sometimes mutation happens before we get observer ready
     let chatRows = document.querySelectorAll('#chat_table1 tr')
     if (chatRows.length > 0) {
-        processChatRows(chatRows)
+        processMainChatRows(chatRows)
         lastChatRow = parseInt(chatRows[0].id.substring(6)) //Mark the first row as the last checked row
         if (isFirstChatMutation)
             isFirstChatMutation = false //Avoid notifications on first load
@@ -314,9 +325,9 @@ let settings = null, defaultSettings = {
                     if (mutation.target.parentNode.id === "chat_table1") {
                         let chatRows = mutation.target.querySelectorAll('tr')
                         try {
-                            processChatRows(chatRows)
+                            processMainChatRows(chatRows)
                         } catch (e) {
-                            console.log("Error in function 'processChatRows': " + e.message)
+                            console.log("Error in function 'processMainChatRows': " + e.message)
                         }
                         lastChatRow = parseInt(chatRows[0].id.substring(6)) //Mark the first row as the last checked row
 
@@ -327,29 +338,7 @@ let settings = null, defaultSettings = {
 
                     //New log rows
                     if (mutation.target.id === "chat_table10" || mutation.target.parentNode.id === "chat_table10") {
-                        let logRows = document.querySelectorAll('#chat_table10 tr')
-                        for (let j = 0, row; row = logRows[j]; j++) {
-                            let currentRow = parseInt(row.id.substring(7))
-                            if (currentRow <= lastLogRow)
-                                continue
-
-                            //Prepare message by removing timestamp for better text processing
-                            let message = row.textContent.substring(11)
-
-                            //Detect quest completion
-                            if (message.match(/You have completed your (.+) quest/)) {
-                                if (settings.notifyQuest)
-                                    notify(message)
-                                if (settings.showQP)
-                                    unsafeWindow.updateQuestPoints()
-                            }
-
-                            //Detect item sales
-                            if (settings.notifySales && message.match(/You have sold/)) {
-                                notify(message)
-                            }
-                        }
-                        lastLogRow = parseInt(logRows[0].id.substring(7))
+                        processLogRows()
                     }
 
                     //When popup opens
@@ -465,11 +454,6 @@ let settings = null, defaultSettings = {
                             }
                         }
 
-                        //Fix duplicate id bug
-                        let gemList = mutation.target.querySelector('#gemid')
-                        if (gemList !== null)
-                            gemList.id = 'maingemid'
-
                         //Jewelcrafting gem colors
                         addGemDropdownColorClass('maingemid')
 
@@ -526,6 +510,7 @@ async function prepareSettings() {
     notifMenu.appendChild(createCheckbox("notifyQuest", "Notify quest completion", "setting"))
     notifMenu.appendChild(createCheckbox("notifyCrafting", "Notify crafting finish & mat. shortage", "setting"))
     notifMenu.appendChild(createCheckbox("notifySales", "Notify items sold on market", "setting"))
+    notifMenu.appendChild(document.createElement('br'))
     settingsContainer.appendChild(notifMenu)
 
     let chatMenu = document.createElement('div')
@@ -547,6 +532,15 @@ async function prepareSettings() {
     chatMenu.appendChild(createCheckbox("clickableForum", "Turn URLs into links in forum", "setting l-blue"))
     chatMenu.appendChild(document.createElement('br'))
     chatMenu.appendChild(createCheckbox("increaseChat", "Increase chat size limit to 1000", "setting", changeChatSizeLimit))
+    chatMenu.appendChild(document.createElement('br'))
+    let logHeader = document.createElement("div")
+    logHeader.textContent = "Log"
+    logHeader.className = "category-header"
+    chatMenu.appendChild(logHeader)
+    chatMenu.appendChild(createCheckbox("hideCommonDrops", "Hide Common/Fractured drops", "setting white", refreshDropVisibility))
+    chatMenu.appendChild(createCheckbox("hideUncommonDrops", "Hide Uncommon/Chipped drops", "setting white", refreshDropVisibility))
+    chatMenu.appendChild(createCheckbox("hideLevelUps", "Hide level ups", "setting white", refreshDropVisibility))
+    chatMenu.appendChild(document.createElement('br'))
     settingsContainer.appendChild(chatMenu)
 
     let otherMenu = document.createElement('div')
@@ -760,7 +754,121 @@ function sendClanMessage() {
     clanInput.value = ""
 }
 
-function processChatRows(chatRows) {
+function processLogRows() {
+    let logRows = document.querySelectorAll('#chat_table10 tr')
+    for (let j = 0, row; row = logRows[j]; j++) {
+        let currentRow = parseInt(row.id.substring(7))
+        if (currentRow <= lastLogRow)
+            continue
+
+        //Prepare message by removing timestamp for better text processing
+        let time = row.textContent.substring(0, 10)
+        let message = row.textContent.substring(11)
+
+        //Detect quest completion
+        if (message.match(/You have completed your (.+) quest/)) {
+            if (settings.notifyQuest)
+                notify(message)
+            if (settings.showQP)
+                unsafeWindow.updateQuestPoints()
+        }
+
+        //Detect item sales
+        if (settings.notifySales && message.match(/You have sold/)) {
+            notify(message)
+        }
+
+        //Detect common drops
+        if (message.match(/Common|Fractured/)) {
+            row.dataset.isCommonDrop = true
+            if (settings.hideCommonDrops) {
+                row.style.display = settings.hideCommonDrops ? 'none' : 'table-row'
+                //Exclude low drops from unread count on Log channel tab
+                unsafeWindow.chatcount10--
+                if (unsafeWindow.chatcount10 < 0)
+                    unsafeWindow.chatcount10 = 0
+                document.getElementById('chatcount10').textContent = (unsafeWindow.chatcount10 !== 0 ? " (" + unsafeWindow.chatcount10 + ")" : "")
+            }
+        }
+
+        //Detect uncommon drops
+        if (message.match(/Uncommon|Chipped/)) {
+            row.dataset.isUncommonDrop = true
+            if (settings.hideUncommonDrops) {
+                row.style.display = settings.hideUncommonDrops ? 'none' : 'table-row'
+                //Exclude low drops from unread count on Log channel tab
+                unsafeWindow.chatcount10--
+                if (unsafeWindow.chatcount10 < 0)
+                    unsafeWindow.chatcount10 = 0
+                document.getElementById('chatcount10').textContent = (unsafeWindow.chatcount10 !== 0 ? " (" + unsafeWindow.chatcount10 + ")" : "")
+            }
+        }
+
+
+        //Detect level ups
+        if (message.match(/You have gained a level and rolled/)) {
+            row.dataset.isLevelUp = true
+            if (settings.hideLevelUps) {
+                row.style.display = settings.hideLevelUps ? 'none' : 'table-row'
+                //Exclude low drops from unread count on Log channel tab
+                unsafeWindow.chatcount10--
+                if (unsafeWindow.chatcount10 < 0)
+                    unsafeWindow.chatcount10 = 0
+                document.getElementById('chatcount10').textContent = (unsafeWindow.chatcount10 !== 0 ? " (" + unsafeWindow.chatcount10 + ")" : "")
+            }
+        }
+
+        //Color chests and lockpicks
+        //You have found a(n) Uncommon Treasure Chest
+        //You have found a(n) Uncommon Lockpick
+        let regexUncommon = /(.*)(Uncommon Treasure Chest|Uncommon Lockpick)/
+        let regexRare = /(.*)(Rare Treasure Chest|Rare Lockpick)/
+        let regexEpic = /(.*)(Epic Treasure Chest|Epic Lockpick)/
+        let regexLegendary = /(.*)(Legendary Treasure Chest|Legendary Lockpick)/
+        if (message.match(regexUncommon)) {
+            let match = regexUncommon.exec(message)
+            row.childNodes[0].innerHTML = "<td><span class='time'>" + time + "</span> " + match[1] + "<span class='uncommon'>" + match[2] + "</span></td>"
+        } else if (message.match(regexRare)) {
+            let match = regexRare.exec(message)
+            row.childNodes[0].innerHTML = "<td><span class='time'>" + time + "</span> " + match[1] + "<span class='rare'>" + match[2] + "</span></td>"
+        } else if (message.match(regexEpic)) {
+            let match = regexEpic.exec(message)
+            row.childNodes[0].innerHTML = "<td><span class='time'>" + time + "</span> " + match[1] + "<span class='epic'>" + match[2] + "</span></td>"
+        } else if (message.match(regexLegendary)) {
+            let match = regexLegendary.exec(message)
+            row.childNodes[0].innerHTML = "<td><span class='time'>" + time + "</span> " + match[1] + "<span class='legendary'>" + match[2] + "</span></td>"
+        }
+
+        //Color gems
+        //You have found a Fractured Sapphire.
+        //You have found a Chipped Sapphire.
+        let regexRuby = /(.* )(.* Ruby)(\.)/
+        let regexEmerald = /(.* )(.* Emerald)(\.)/
+        let regexDiamond = /(.* )(.* Diamond)(\.)/
+        let regexSapphire = /(.* )(.* Sapphire)(\.)/
+        let regexAmethyst = /(.* )(.* Amethyst)(\.)/
+        if (message.match(regexRuby)) {
+            let match = regexRuby.exec(message)
+            row.childNodes[0].innerHTML = "<td><span class='time'>" + time + "</span> " + match[1] + "<span class='red'>" + match[2] + "</span>" + match[3] + "</td>"
+        } else if (message.match(regexEmerald)) {
+            let match = regexEmerald.exec(message)
+            row.childNodes[0].innerHTML = "<td><span class='time'>" + time + "</span> " + match[1] + "<span class='g-green'>" + match[2] + "</span>" + match[3] + "</td>"
+        } else if (message.match(regexDiamond)) {
+            let match = regexDiamond.exec(message)
+            row.childNodes[0].innerHTML = "<td><span class='time'>" + time + "</span> " + match[1] + "<span class='l-blue'>" + match[2] + "</span>" + match[3] + "</td>"
+        } else if (message.match(regexSapphire)) {
+            let match = regexSapphire.exec(message)
+            row.childNodes[0].innerHTML = "<td><span class='time'>" + time + "</span> " + match[1] + "<span class='blue'>" + match[2] + "</span>" + match[3] + "</td>"
+        } else if (message.match(regexAmethyst)) {
+            let match = regexAmethyst.exec(message)
+            row.childNodes[0].innerHTML = "<td><span class='time'>" + time + "</span> " + match[1] + "<span class='purple'>" + match[2] + "</span>" + match[3] + "</td>"
+        }
+    }
+
+    lastLogRow = parseInt(logRows[0].id.substring(7))
+}
+
+function processMainChatRows(chatRows) {
     for (let j = chatRows.length - 1, row; row = chatRows[j]; j--) {
         //Stop after we are reached to previously checked messages, no need for double check
         let currentRow = parseInt(row.id.substring(6))
@@ -769,11 +877,11 @@ function processChatRows(chatRows) {
 
         //Prepare message by removing timestamp for better text processing
         let message = row.textContent.substring(11)
-        let rowNodes = row.childNodes[0].childNodes
-        let hasClanColor = false, hasTradeColor = false, hasPrivateColor = false, hasCommandColor = false
 
         //Detect if message part is colored, needed if someone writes keywords like [Clan] in normal channel
+        let rowNodes = row.childNodes[0].childNodes
         let lastNode = rowNodes[rowNodes.length - 1]
+        let hasClanColor = false, hasTradeColor = false, hasPrivateColor = false, hasCommandColor = false
         if (typeof lastNode.style !== "undefined") {
             if (lastNode.style.color === "rgb(255, 255, 0)")
                 hasClanColor = true
@@ -819,6 +927,23 @@ function processChatRows(chatRows) {
                 if (settings.notifTrade && !isFirstChatMutation)
                     notify(message)
             }
+        }
+
+        //Color globals
+        //Global: xyz has found a(n) Rare Treasure Chest!
+        //Global: xyz has found a(n) Rare Lockpick!
+        let regexRare = /^(Global:.*)(Rare Treasure Chest|Rare Lockpick)(!)/
+        let regexEpic = /^(Global:.*)(Epic Treasure Chest|Epic Lockpick)(!)/
+        let regexLegendary = /^(Global:.*)(Legendary Treasure Chest|Legendary Lockpick)(!)/
+        if (message.match(regexRare)) {
+            let match = regexRare.exec(message)
+            row.childNodes[0].lastChild.innerHTML = match[1] + "<span class='rare'>" + match[2] + "</span>" + match[3]
+        } else if (message.match(regexEpic)) {
+            let match = regexEpic.exec(message)
+            row.childNodes[0].lastChild.innerHTML = match[1] + "<span class='epic'>" + match[2] + "</span>" + match[3]
+        } else if (message.match(regexLegendary)) {
+            let match = regexLegendary.exec(message)
+            row.childNodes[0].lastChild.innerHTML = match[1] + "<span class='legendary'>" + match[2] + "</span>" + match[3]
         }
 
         //Check for global
@@ -1103,8 +1228,7 @@ function shortenRiftKillMessage(row) {
     let shortenRiftKillRegex = /^Global: (.+) \(Level (.+)\) landed the killing blow on the (.+) \(Level (.+)\) obtaining (.+) Soul Shard\(s\) and (.+) Riftscore! An additional (.+) Riftscore multiplier was added to the Rift!/
     let match = shortenRiftKillRegex.exec(row.childNodes[0].lastChild.textContent)
     if (match) {
-        message = 'Global: <a href="javascript:m(' + match[1] + ')">' + match[1] + '</a> (' + match[2] + ') killed ' + match[3] + ' (' + match[4] + '): ' + match[5] + ' Shard(s), ' + match[6] + ' Riftscore, ' + match[7] + ' multiplier!'
-        row.childNodes[0].lastChild.innerHTML = message
+        row.childNodes[0].lastChild.innerHTML = 'Global: <a href="javascript:m(' + match[1] + ')">' + match[1] + '</a> (' + match[2] + ') killed ' + match[3] + ' (' + match[4] + '): ' + match[5] + ' Shard(s), ' + match[6] + ' Riftscore, ' + match[7] + ' multiplier!'
     }
 }
 
@@ -1152,7 +1276,10 @@ function updateDHTimer(keepTime) {
             else
                 timeStr = hours + "h " + minutes + "m"
         } else {
-            timeStr = days + "d " + hours + "h"
+            if (hours === 0)
+                timeStr = days + "d " + minutes + "m"
+            else
+                timeStr = days + "d " + hours + "h"
         }
     }
 
@@ -1463,7 +1590,7 @@ function notifyNewVersion() {
     }
 }
 
-function addClearLogButton() {
+function prepareLogChannel() {
     let log = document.querySelector("#chat10")
     let div = document.createElement('div')
     div.className = "table-style"
@@ -1481,10 +1608,23 @@ function addClearLogButton() {
         }
     })
     div.appendChild(a)
+
     if (log.firstElementChild)
         log.insertBefore(div, log.firstElementChild)
     else
         log.appendChild(div)
+}
+
+function refreshDropVisibility() {
+    let chatRows = document.querySelectorAll('#chat_table10 tr')
+    for (let i = 0, row; row = chatRows[i]; i++) {
+        if (row.dataset.isCommonDrop)
+            row.style.display = settings.hideCommonDrops ? 'none' : 'table-row'
+        if (row.dataset.isUncommonDrop)
+            row.style.display = settings.hideUncommonDrops ? 'none' : 'table-row'
+        if (row.dataset.isLevelUp)
+            row.style.display = settings.hideLevelUps ? 'none' : 'table-row'
+    }
 }
 
 function notify(message, sound) {
@@ -1577,19 +1717,24 @@ function addStyleSheet() {
     sheet.insertRule('#gemid, small.xx-small {font-size: xx-small;}', sheet.cssRules.length)
     sheet.insertRule('.left-quest-action-battle {font-size: 10px; line-height: 1em;}', sheet.cssRules.length)
     sheet.insertRule('.left-quest-action-gather {font-size: 10px; line-height: 1em;}', sheet.cssRules.length)
-    sheet.insertRule('.g-green {color: #88FF88;}', sheet.cssRules.length)
-    sheet.insertRule('.d-green {color: #00BB00;}', sheet.cssRules.length)
-    sheet.insertRule('.purple  {color: #CC66CC;}', sheet.cssRules.length)
-    sheet.insertRule('.yellow  {color: #FFFF00;}', sheet.cssRules.length)
-    sheet.insertRule('.l-blue  {color: #CCFFFF;}', sheet.cssRules.length)
-    sheet.insertRule('.blue    {color: #6666FF;}', sheet.cssRules.length)
-    sheet.insertRule('.red     {color: #FF7171;}', sheet.cssRules.length)
-    sheet.insertRule('.l-red   {color: #F59292;}', sheet.cssRules.length)
-    sheet.insertRule('.orang   {color: #FFA550;}', sheet.cssRules.length)
-    sheet.insertRule('.white   {color: #FFFFFF;}', sheet.cssRules.length)
-    sheet.insertRule('.smol    {font-size: 10px;}', sheet.cssRules.length)
-    sheet.insertRule('.padl2   {padding-left: 4px;}', sheet.cssRules.length)
-    sheet.insertRule('.bold    {font-weight: bold;}', sheet.cssRules.length)
+    sheet.insertRule('.g-green   {color: #88FF88;}', sheet.cssRules.length)
+    sheet.insertRule('.d-green   {color: #00BB00;}', sheet.cssRules.length)
+    sheet.insertRule('.purple    {color: #CC66CC;}', sheet.cssRules.length)
+    sheet.insertRule('.yellow    {color: #FFFF00;}', sheet.cssRules.length)
+    sheet.insertRule('.l-blue    {color: #CCFFFF;}', sheet.cssRules.length)
+    sheet.insertRule('.blue      {color: #6666FF;}', sheet.cssRules.length)
+    sheet.insertRule('.red       {color: #FF7171;}', sheet.cssRules.length)
+    sheet.insertRule('.l-red     {color: #F59292;}', sheet.cssRules.length)
+    sheet.insertRule('.orang     {color: #FFA550;}', sheet.cssRules.length)
+    sheet.insertRule('.white     {color: #FFFFFF;}', sheet.cssRules.length)
+    sheet.insertRule('.smol      {font-size: 10px;}', sheet.cssRules.length)
+    sheet.insertRule('.padl2     {padding-left: 4px;}', sheet.cssRules.length)
+    sheet.insertRule('.bold      {font-weight: bold;}', sheet.cssRules.length)
+    sheet.insertRule('.bold      {font-weight: bold;}', sheet.cssRules.length)
+    sheet.insertRule('.uncommon  {color: #00CC00;}', sheet.cssRules.length)
+    sheet.insertRule('.rare      {color: #00DDDD;}', sheet.cssRules.length)
+    sheet.insertRule('.epic      {color: #EEEE00;}', sheet.cssRules.length)
+    sheet.insertRule('.legendary {color: #FF7711;}', sheet.cssRules.length)
 
     if (settings.fixedPopupHeader) {
         sheet.insertRule('#popup {overflow-y: hidden;}', sheet.cssRules.length)

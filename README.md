@@ -5,6 +5,33 @@ Initially created by ApDea and now forked to continue developement.
 
 ## Changelog
 
+### v1.8.8
+
+[Features]
+- Log: Optional filter for uncommon drops (Uncommon, Chipped)
+- Log: Optional filter for level ups
+
+### v1.8.7
+
+[Bugfixing]
+- Log count with hidden low drops now shows the correct amount of new non hidden messages
+
+[Polishing]
+- Show 1d XXm instead of 1d 0h in DH timer when 1d < remainingDH < 1d1h
+
+### v1.8.6
+
+[Features]
+- Chat: Treasure Chest and Lockpick drops are now colored (Rare, Epic, Legendary)
+- Log: Optional filter for low drops (Common, Fractured)
+- Log: Treasure Chest and Lockpick drops are now colored (Uncommon, Rare, Epic, Legendary)
+- Log: Gem drops are now colored
+
+### v1.8.5
+
+[Bugfixing]
+- Fixed quick quest initilization when battle or gather quests are hidden
+
 ### v1.8.4
 
 [Features]
