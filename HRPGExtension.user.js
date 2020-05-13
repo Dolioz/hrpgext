@@ -65,7 +65,6 @@ let settings = null, defaultSettings = {
     compareTiers: false,
 
     hideHeader: true,
-    fixedPopupHeader: true,
     permanentScrollbar: true,
 
     showPower: true,
@@ -141,7 +140,7 @@ let settings = null, defaultSettings = {
     createChannelButton(10, "Log")
     createChannelButton(100, "Statistics")
     headerMenuContainer = createChannel(3, "Menu")
-    settingsContainer = createChannel(4, "Settings")
+    settingsContainer = createChannel(4, "HRPG Extension")
 
     prepareSettings()
     createHeaderMenu()
@@ -239,8 +238,8 @@ let settings = null, defaultSettings = {
         }
     }
 
+    // Power and armor
     if (financialHeaderRow) {
-        // Power and armor
         let powerTr = document.createElement('tr')
         let armorTr = document.createElement('tr')
         powerTr.className = "power_row"
@@ -491,16 +490,15 @@ async function prepareSettings() {
     let otherMenu = document.createElement('div')
     otherMenu.className = "settings table-style col-4"
     let otherHeader = document.createElement("div")
-    otherHeader.textContent = "Other"
+    otherHeader.textContent = "Misc"
     otherHeader.className = "category-header"
     otherMenu.appendChild(otherHeader)
-    otherMenu.appendChild(createCheckbox("startupGathering", "Set gathering as a startup screen", "setting"))
+    otherMenu.appendChild(createCheckbox("startupGathering", "Set gathering as startup screen", "setting"))
     otherMenu.appendChild(createCheckbox("personalDH", "Ask confirmation on personal DH", "setting"))
-    otherMenu.appendChild(createCheckbox("showClanProfile", "Show clan profile in clan popup", "setting"))
+    otherMenu.appendChild(createCheckbox("showClanProfile", "Show clan profile in clan menu", "setting"))
     otherMenu.appendChild(createCheckbox("compareTiers", "Tell about cheaper skill tiers", "setting"))
     otherMenu.appendChild(document.createElement('br'))
     otherMenu.appendChild(createCheckbox("hideHeader", "Hide game header", "setting", toggleHeader))
-    otherMenu.appendChild(createCheckbox("fixedPopupHeader", "Fixed popup header (requires refresh)", "setting"))
     otherMenu.appendChild(createCheckbox("permanentScrollbar", "Permanent scrollbar (requires refresh)", "setting"))
     otherMenu.appendChild(document.createElement('br'))
     otherMenu.appendChild(createCheckbox("showPower", "Show power and armor", "setting", changeClassDisplay.bind(null, 'power_row', 'showPower', 'table-row')))
@@ -1616,11 +1614,6 @@ function addStyleSheet() {
     sheet.insertRule('.rare      {color: #00DDDD;}', sheet.cssRules.length)
     sheet.insertRule('.epic      {color: #EEEE00;}', sheet.cssRules.length)
     sheet.insertRule('.legendary {color: #FF7711;}', sheet.cssRules.length)
-
-    if (settings.fixedPopupHeader) {
-        sheet.insertRule('#popup {overflow-y: hidden;}', sheet.cssRules.length)
-        sheet.insertRule('#popup-content {overflow-y: auto; max-height: 498px;}', sheet.cssRules.length)
-    }
 
     if (settings.permanentScrollbar) {
         sheet.insertRule('html {overflow-y: scroll;}', sheet.cssRules.length)

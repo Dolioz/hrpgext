@@ -1,120 +1,76 @@
 # HRPG Extension
 
-Userscript to improve the UI of HeroesRPG, does not automate gameplay.
-Initially created by ApDea and now forked to continue developement.
+Userscript to improve the UI of HeroesRPG.
+Does not automate gameplay.
 
-## Changelog
+## Installation guide
 
-### v1.8.8
+Prerequisite: Tampermonkey browser plugin is installed
 
-[Features]
-- Log: Optional filter for uncommon drops (Uncommon, Chipped)
-- Log: Optional filter for level ups
+Firefox
+- Use download link: https://github.com/Dolioz/hrpgext/raw/master/HRPGExtension.user.js
 
-### v1.8.7
+Chrome
+- Create a new user script in tampermonkey
+- Copy the script from https://github.com/Dolioz/hrpgext/blob/master/HRPGExtension.user.js and eplace the new user script content with it
 
-[Bugfixing]
-- Log count with hidden low drops now shows the correct amount of new non hidden messages
+## UI improvements
 
-[Polishing]
-- Show 1d XXm instead of 1d 0h in DH timer when 1d < remainingDH < 1d1h
+- Coloring gems in log
+- Coloring gems in gem menu and their boost value to its name (e.g. Fractured Emerald (Gold 0.5%))
+- Coloring uncommen chests and lockpicks correctly in log
+- Coloring rare chests and lockpicks correctly in log and in globals
+- Coloring epic and legendary chests correctly in globals
 
-### v1.8.6
+## Toggleable UI improvements
 
-[Features]
-- Chat: Treasure Chest and Lockpick drops are now colored (Rare, Epic, Legendary)
-- Log: Optional filter for low drops (Common, Fractured)
-- Log: Treasure Chest and Lockpick drops are now colored (Uncommon, Rare, Epic, Legendary)
-- Log: Gem drops are now colored
+### Notifications
 
-### v1.8.5
+- Globals
+- Personal messages
+- Rift spawn and opening message. Also adds information to the browser tab [RS] for rift soon and [RIFT] for an open rift.
+- Trade chat messages
+- Clan messages
+- Clan globals
+- Quest completion
+- Crafting finish & material shortage
+- Item sold on market
 
-[Bugfixing]
-- Fixed quick quest initilization when battle or gather quests are hidden
+### Chat
 
-### v1.8.4
+- Shorten rift kill globals to:
+  - Standard: ZN Tanar (Level 150,000) landed the killing blow on the Hades [7] (Level 150,000) obtaining 1 Soul Shard(s) and 1,156 Riftscore! An additional x1.8 Riftscore multiplier was added to the Rift!
+  - Short: Global: ZN Tanar (150,000) killed Hades [7] (150,000): 2 Shard(s), 1,156 Riftscore, x1.8 multiplier!
+- Hide most non clan member globals
+- Hide most clan member globals
+- Exclude most globals from unread count
+- Separate clan channel (chat commands can't be used in the clan channel)
+- Hide clan messages from main channel
+- View user profile with right click
+- Turn URLs into clickable links
+- Turn URLs into links in forum
+- Increase chat size limit to 1000
 
-[Features]
-- New options to hide battle/gather quests
+### Log
 
-[Bugfixing]
-- Toggle header after header creation
-- Fixed hiding clan member globals
+- Hide common drops (chests, lockpicks, accessories) and fractured gems
+- Hide uncommon drops (chests, lockpicks, accessories) and chipped gems
+- Hide level ups
 
-[Polishing]
-- CSS alignments for clan chat
+### Misc
 
-### v1.8.3
-
-[Features]
-- Changed setting from "Hide most other player globals" to "Hide most non clan member globals"
-- New option to hide most clan member globals
-
-[Polishing]
-- Increased chat size option from 300 to 1000
-- Set default setting for enter rift button to deactivated
-- Removed unstable feature "click player in clan chat to open clan profile"
-
-### v1.8.2
-
-[Features]
-- Added option for a static [Enter Rift] button
-- Shorten your own rift kill messages aswell
-- Hide other globals: added hero kills and quest completion
-
-[Bugfixing]
-- Fixed credit store link to "Boosts"
-
-### v1.8.1
-
-[Features]
-- Added a menu with game header links (only active when the game header is hidden)
-
-### v1.8.0
-
-[Features]
-- Added auto update (only tested in firefox, may not work in chrome)
-- Option to hide game header
-- Option for a permanent scrollbar to keep the game UI static when switching channels (requires page refresh)
-
-[Polishing]
-- Added hint to the option "Fixed popup header" that it requires a page refresh
-- Removed option center popup, because it was not used
-- Show semantic version in footer
-
-### v1.7.2
-
-[Features]
-- Shorten rift kill messages show shard and riftscore rewards (E.g.: Global: ZN Tanar (150,000) killed Hades [7] (150,000): 2 Shard(s), 1,156 Riftscore, x1.8 multiplier!)
-
-[Polishing]
-- Reworked setting descriptions and order
-- Increased attribute bonus font size
-
-### v1.7.1
-
-[Features]
-- Added rift soon warning [RS] in the document title, when a rift is about to open in 5 minutes
-
-[Bugfixing]
-- Fixed DH status minute + 1 bug
-- Fixed display of the script version
-
-[Polishing]
-- Further reformatting
-
-### v1.7.0
-
-[Features] 
-- Added notification for "A Rift will open in 5 minutes!"
-- Document title is extended with [RIFT] when a rift is open or is about to open in 5 minutes
-
-[Bugfixing]
-- Fixed shorten rift kill globals
-
-[Polishing]
-- Reformatted code with formatter and removed dead code
-- Removed show rift score, because its broken and obsolete due to game changes
-- Removed gem fix, because Carl fixed it recently
-- Removed new version notification, because automatic update is no longer supported
-- Removed donation footer
+- Set gathering as startup screen
+- Ask confirmation on personal double haste
+- Show clan profile link in clan menu
+- Show cheaper skill tiers (compares cost efficiency between T1, T2 and T3)
+- Hide game header (adds the links of the header as separate menu)
+- Permanend scrollbar to prevent UI moving when switching between chat and statistics (requires refresh after change)
+- Show power and armor in UI (updates when remove/equip gear and when chat command "/stats" is executed)
+- Show attribute bonus in UI (updates when chat command "/stats" is executed)
+- Show quest points in UI with link to the quest point stopre (updates only on quest completion, not when buying stuff from the store)
+- Hide battle quests (useful for gathers)
+- Hide gather quests (useful for battlers)
+- Show quest re-reoll/reduce buttons (requires on click less then Carls quick link)
+- Show DH timer in UI
+- Show static [Enter Rift] button in UI
+- Show configurable store link next to credits in UI
