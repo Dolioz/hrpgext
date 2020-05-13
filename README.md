@@ -12,10 +12,13 @@ Firefox
 
 Chrome
 - Create a new user script in tampermonkey
-- Copy the script from https://github.com/Dolioz/hrpgext/blob/master/HRPGExtension.user.js and eplace the new user script content with it
+- Copy the script from https://github.com/Dolioz/hrpgext/blob/master/HRPGExtension.user.js and replace the content of the new created user script with it
 
 ## UI Improvements
 
+- Add additional information to the browser tab:
+    - [RS] = rift soon
+    - [RIFT] = rift is open
 - Coloring gems in log
 - Coloring gems in gem menu and their boost value to its name (e.g. Fractured Emerald (Gold 0.5%))
 - Coloring uncommen chests and lockpicks correctly in log
@@ -24,11 +27,12 @@ Chrome
 
 ## Toggleable UI Improvements
 
-### Notifications
+### Desktop Notifications
 
+- Enable sound notifications
 - Globals
 - Personal messages
-- Rift spawn and opening message. Also adds information to the browser tab [RS] for rift soon and [RIFT] for an open rift.
+- Rift spawn and opening message
 - Trade chat messages
 - Clan messages
 - Clan globals
