@@ -3,7 +3,7 @@
 Userscript to improve the UI of HeroesRPG.
 Does not automate gameplay.
 
-## Installation guide
+## Installation Guide
 
 Prerequisite: Tampermonkey browser plugin is installed
 
@@ -14,7 +14,7 @@ Chrome
 - Create a new user script in tampermonkey
 - Copy the script from https://github.com/Dolioz/hrpgext/blob/master/HRPGExtension.user.js and eplace the new user script content with it
 
-## UI improvements
+## UI Improvements
 
 - Coloring gems in log
 - Coloring gems in gem menu and their boost value to its name (e.g. Fractured Emerald (Gold 0.5%))
@@ -22,7 +22,7 @@ Chrome
 - Coloring rare chests and lockpicks correctly in log and in globals
 - Coloring epic and legendary chests correctly in globals
 
-## Toggleable UI improvements
+## Toggleable UI Improvements
 
 ### Notifications
 
@@ -51,10 +51,13 @@ Chrome
 - Turn URLs into links in forum
 - Increase chat size limit to 1000
 
-### Log
+### Log Filter
 
 - Hide common drops (chests, lockpicks, accessories) and fractured gems
 - Hide uncommon drops (chests, lockpicks, accessories) and chipped gems
+- Hide rare drops (chests, lockpicks, accessories)
+- Hide skill point drops
+- Hide armor/weapon fragment drops
 - Hide level ups
 
 ### Misc

@@ -83,6 +83,9 @@ let settings = null, defaultSettings = {
     // log settings
     hideCommonDrops: true,
     hideUncommonDrops: false,
+    hideRareDrops: false,
+    hideSpDrops: false,
+    hideFragmentDrops: false,
     hideLevelUps: false,
 };
 
@@ -483,6 +486,9 @@ async function prepareSettings() {
     chatMenu.appendChild(logHeader)
     chatMenu.appendChild(createCheckbox("hideCommonDrops", "Hide Common/Fractured drops", "setting white", refreshDropVisibility))
     chatMenu.appendChild(createCheckbox("hideUncommonDrops", "Hide Uncommon/Chipped drops", "setting white", refreshDropVisibility))
+    chatMenu.appendChild(createCheckbox("hideRareDrops", "Hide Rare drops", "setting white", refreshDropVisibility))
+    chatMenu.appendChild(createCheckbox("hideSpDrops", "Hide SP drops", "setting white", refreshDropVisibility))
+    chatMenu.appendChild(createCheckbox("hideFragmentDrops", "Hide armor/weapon fragment drops", "setting white", refreshDropVisibility))
     chatMenu.appendChild(createCheckbox("hideLevelUps", "Hide level ups", "setting white", refreshDropVisibility))
     chatMenu.appendChild(document.createElement('br'))
     settingsContainer.appendChild(chatMenu)
@@ -747,6 +753,44 @@ function processLogRows() {
             }
         }
 
+        // Detect rare drops
+        if (message.match(/Rare/)) {
+            row.dataset.isRareDrop = true
+            if (settings.hideRareDrops) {
+                row.style.display = settings.hideRareDrops ? 'none' : 'table-row'
+                // Exclude low drops from unread count on Log channel tab
+                unsafeWindow.chatcount10--
+                if (unsafeWindow.chatcount10 < 0)
+                    unsafeWindow.chatcount10 = 0
+                document.getElementById('chatcount10').textContent = (unsafeWindow.chatcount10 !== 0 ? " (" + unsafeWindow.chatcount10 + ")" : "")
+            }
+        }
+
+        // Detect SP drops
+        if (message.match(/You have received .+ Skill Points/)) {
+            row.dataset.isSpDrop = true
+            if (settings.hideSpDrops) {
+                row.style.display = settings.hideSpDrops ? 'none' : 'table-row'
+                // Exclude low drops from unread count on Log channel tab
+                unsafeWindow.chatcount10--
+                if (unsafeWindow.chatcount10 < 0)
+                    unsafeWindow.chatcount10 = 0
+                document.getElementById('chatcount10').textContent = (unsafeWindow.chatcount10 !== 0 ? " (" + unsafeWindow.chatcount10 + ")" : "")
+            }
+        }
+
+        // Detect armor/weapon fragment drops
+        if (message.match(/You have found .+ Fragment/)) {
+            row.dataset.isFragmentDrop = true
+            if (settings.hideFragmentDrops) {
+                row.style.display = settings.hideFragmentDrops ? 'none' : 'table-row'
+                // Exclude low drops from unread count on Log channel tab
+                unsafeWindow.chatcount10--
+                if (unsafeWindow.chatcount10 < 0)
+                    unsafeWindow.chatcount10 = 0
+                document.getElementById('chatcount10').textContent = (unsafeWindow.chatcount10 !== 0 ? " (" + unsafeWindow.chatcount10 + ")" : "")
+            }
+        }
 
         // Detect level ups
         if (message.match(/You have gained a level and rolled/)) {
@@ -1541,6 +1585,12 @@ function refreshDropVisibility() {
             row.style.display = settings.hideCommonDrops ? 'none' : 'table-row'
         if (row.dataset.isUncommonDrop)
             row.style.display = settings.hideUncommonDrops ? 'none' : 'table-row'
+        if (row.dataset.isRareDrop)
+            row.style.display = settings.hideRareDrops ? 'none' : 'table-row'
+        if (row.dataset.isSpDrop)
+            row.style.display = settings.hideSpDrops ? 'none' : 'table-row'
+        if (row.dataset.isFragmentDrop)
+            row.style.display = settings.hideFragmentDrops ? 'none' : 'table-row'
         if (row.dataset.isLevelUp)
             row.style.display = settings.hideLevelUps ? 'none' : 'table-row'
     }
