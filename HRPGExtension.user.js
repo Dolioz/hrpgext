@@ -57,7 +57,6 @@ let settings = null, defaultSettings = {
 
     startupGathering: false,
     personalDH: false,
-    showClanProfile: true,
     compareTiers: false,
 
     hideHeader: true,
@@ -375,7 +374,7 @@ let settings = null, defaultSettings = {
                         }
 
                         let clanSummary = mutation.target.querySelector('a[href="javascript:clanMenu(\'summary\')"]')
-                        if (settings.showClanProfile && clanSummary) {
+                        if (clanSummary) {
                             let clanProfile = document.createElement('a')
                             clanProfile.href = "javascript:viewClanProfile()"
                             clanProfile.textContent = "Public profile"
@@ -510,7 +509,6 @@ async function prepareSettings() {
     otherMenu.appendChild(otherHeader)
     otherMenu.appendChild(createCheckbox("startupGathering", "Set gathering as startup screen", "setting"))
     otherMenu.appendChild(createCheckbox("personalDH", "Ask confirmation on personal DH", "setting"))
-    otherMenu.appendChild(createCheckbox("showClanProfile", "Show clan profile in clan menu", "setting"))
     otherMenu.appendChild(createCheckbox("compareTiers", "Tell about cheaper skill tiers", "setting"))
     otherMenu.appendChild(document.createElement('br'))
     otherMenu.appendChild(createCheckbox("hideHeader", "Hide game header", "setting", toggleHeader))

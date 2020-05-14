@@ -21,6 +21,7 @@ Chrome
     - [RIFT] = rift is open
 - Clickable links
 - View user profile with right click
+- Show clan profile link in clan menu
 - Coloring gems in log
 - Coloring gems in gem menu and their boost value to its name (e.g. Fractured Emerald (Gold 0.5%))
 - Coloring uncommen chests and lockpicks correctly in log
@@ -67,7 +68,6 @@ Chrome
 
 - Set gathering as startup screen
 - Ask confirmation on personal double haste
-- Show clan profile link in clan menu
 - Show cheaper skill tiers (compares cost efficiency between T1, T2 and T3)
 - Hide game header (adds the links of the header as separate menu)
 - Permanend scrollbar to prevent UI moving when switching between chat and statistics (requires refresh after change)
