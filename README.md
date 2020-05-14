@@ -8,17 +8,19 @@ Does not automate gameplay.
 Prerequisite: Tampermonkey browser plugin is installed
 
 Firefox
+
 - Use download link: https://github.com/Dolioz/hrpgext/raw/master/HRPGExtension.user.js
 
 Chrome
+
 - Create a new user script in tampermonkey
 - Copy the script from https://github.com/Dolioz/hrpgext/blob/master/HRPGExtension.user.js and replace the content of the new created user script with it
 
 ## UI Improvements
 
 - Add additional information to the browser tab:
-    - [RS] = rift soon
-    - [RIFT] = rift is open
+  - [RS] = rift soon
+  - [RIFT] = rift is open
 - Clickable links
 - View user profile with right click
 - Show clan profile link in clan menu
@@ -62,6 +64,7 @@ Chrome
 - Hide rare drops (chests, lockpicks, accessories)
 - Hide skill point drops
 - Hide armor/weapon fragment drops
+- Hide quest item drops
 - Hide level ups
 
 ### Misc

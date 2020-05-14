@@ -81,6 +81,7 @@ let settings = null, defaultSettings = {
     hideRareDrops: false,
     hideSpDrops: false,
     hideFragmentDrops: false,
+    hideQuestItemDrops: false,
     hideLevelUps: false,
 };
 
@@ -494,6 +495,7 @@ async function prepareSettings() {
     chatMenu.appendChild(createCheckbox("hideRareDrops", "Hide Rare drops", "setting white", refreshDropVisibility))
     chatMenu.appendChild(createCheckbox("hideSpDrops", "Hide SP drops", "setting white", refreshDropVisibility))
     chatMenu.appendChild(createCheckbox("hideFragmentDrops", "Hide armor/weapon fragment drops", "setting white", refreshDropVisibility))
+    chatMenu.appendChild(createCheckbox("hideQuestItemDrops", "Hide quest item drops", "setting white", refreshDropVisibility))
     chatMenu.appendChild(createCheckbox("hideLevelUps", "Hide level ups", "setting white", refreshDropVisibility))
     chatMenu.appendChild(document.createElement('br'))
     settingsContainer.appendChild(chatMenu)
@@ -804,6 +806,20 @@ function processLogRows() {
             row.dataset.isFragmentDrop = true
             if (settings.hideFragmentDrops) {
                 row.style.display = settings.hideFragmentDrops ? 'none' : 'table-row'
+                // Exclude low drops from unread count on Log channel tab
+                unsafeWindow.chatcount10--
+                if (unsafeWindow.chatcount10 < 0) {
+                    unsafeWindow.chatcount10 = 0
+                }
+                document.getElementById('chatcount10').textContent = (unsafeWindow.chatcount10 !== 0 ? " (" + unsafeWindow.chatcount10 + ")" : "")
+            }
+        }
+
+        // Detect quest item drops
+        if (message.match(/Quest Item/)) {
+            row.dataset.isQuestItemDrop = true
+            if (settings.hideQuestItemDrops) {
+                row.style.display = settings.hideQuestItemDrops ? 'none' : 'table-row'
                 // Exclude low drops from unread count on Log channel tab
                 unsafeWindow.chatcount10--
                 if (unsafeWindow.chatcount10 < 0) {
@@ -1662,6 +1678,9 @@ function refreshDropVisibility() {
         }
         if (row.dataset.isFragmentDrop) {
             row.style.display = settings.hideFragmentDrops ? 'none' : 'table-row'
+        }
+        if (row.dataset.isQuestItemDrop) {
+            row.style.display = settings.hideQuestItemDrops ? 'none' : 'table-row'
         }
         if (row.dataset.isLevelUp) {
             row.style.display = settings.hideLevelUps ? 'none' : 'table-row'
