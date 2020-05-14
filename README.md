@@ -19,6 +19,8 @@ Chrome
 - Add additional information to the browser tab:
     - [RS] = rift soon
     - [RIFT] = rift is open
+- Clickable links
+- View user profile with right click
 - Coloring gems in log
 - Coloring gems in gem menu and their boost value to its name (e.g. Fractured Emerald (Gold 0.5%))
 - Coloring uncommen chests and lockpicks correctly in log
@@ -50,9 +52,6 @@ Chrome
 - Exclude most globals from unread count
 - Separate clan channel (chat commands can't be used in the clan channel)
 - Hide clan messages from main channel
-- View user profile with right click
-- Turn URLs into clickable links
-- Turn URLs into links in forum
 - Increase chat size limit to 1000
 
 ### Log Filter

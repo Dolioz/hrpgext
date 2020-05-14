@@ -53,10 +53,6 @@ let settings = null, defaultSettings = {
     clanChannel: true,
     clanHide: false,
 
-    usernameClick: true,
-    urlToLink: true,
-    clickableForum: true,
-
     increaseChat: true,
 
     startupGathering: false,
@@ -358,7 +354,7 @@ let settings = null, defaultSettings = {
 
                     if (mutation.target.id === "popup-content") {
                         // Make urls in forum threads to clickable
-                        if (settings.clickableForum && mutation.target.querySelector('#thread-header')) {
+                        if (mutation.target.querySelector('#thread-header')) {
                             mutation.startEdit()
                             mutation.target.innerHTML = mutation.target.innerHTML.replace(
                                 /(([a-z]{3,6}:\/\/)|)([a-zA-Z0-9\-]+\.)+[a-z]{2,13}[\.\?\=\&\%\/\w\-]*\b(['\"]?)/gi,
@@ -490,9 +486,6 @@ async function prepareSettings() {
     chatMenu.appendChild(createCheckbox("clanChannel", "Separate clan channel", "setting yellow", changeChannelVisibility.bind(null, 'chat2', 'clanChannel')))
     chatMenu.appendChild(createCheckbox("clanHide", "Hide clan messages from main channel", "setting yellow", refreshChatVisibility))
     chatMenu.appendChild(document.createElement('br'))
-    chatMenu.appendChild(createCheckbox("usernameClick", "View user profile with right click", "setting l-blue"))
-    chatMenu.appendChild(createCheckbox("urlToLink", "Turn URLs into clickable links", "setting l-blue"))
-    chatMenu.appendChild(createCheckbox("clickableForum", "Turn URLs into links in forum", "setting l-blue"))
     chatMenu.appendChild(document.createElement('br'))
     chatMenu.appendChild(createCheckbox("increaseChat", "Increase chat size limit to 1000", "setting", changeChatSizeLimit))
     chatMenu.appendChild(document.createElement('br'))
@@ -922,25 +915,23 @@ function processMainChatRows(chatRows) {
         // Make urls clickable
         // This regex is not complete and may contain some security risks
         // Source: https://gist.github.com/gruber/8891611#gistcomment-1002063
-        if (settings.urlToLink) {
-            let lastChild = row.childNodes[0].lastChild.innerHTML
-            row.childNodes[0].lastChild.innerHTML = lastChild.replace(
-                /(([a-z]{3,6}:\/\/)|)([a-zA-Z0-9\-]+\.)+[a-z]{2,13}[\.\?\=\&\%\/\w\-]*\b(['\"]?)/gi,
-                function (match, g1, g2, g3, g4) {
-                    // Check if url ends with quotes, then it's probably somewhere in html
-                    // Could use negative lookbehind but it doesn't work in ES6 yet
-                    if (g4 !== '') {
-                        return match
-                    }
-
-                    let url = match
-                    if (!match.match(/^http/i)) {
-                        url = "//" + match
-                    }
-                    return '<a href="' + url + '" target="_blank">' + match + '</a>'
+        let lastChild = row.childNodes[0].lastChild.innerHTML
+        row.childNodes[0].lastChild.innerHTML = lastChild.replace(
+            /(([a-z]{3,6}:\/\/)|)([a-zA-Z0-9\-]+\.)+[a-z]{2,13}[\.\?\=\&\%\/\w\-]*\b(['\"]?)/gi,
+            function (match, g1, g2, g3, g4) {
+                // Check if url ends with quotes, then it's probably somewhere in html
+                // Could use negative lookbehind but it doesn't work in ES6 yet
+                if (g4 !== '') {
+                    return match
                 }
-            )
-        }
+
+                let url = match
+                if (!match.match(/^http/i)) {
+                    url = "//" + match
+                }
+                return '<a href="' + url + '" target="_blank">' + match + '</a>'
+            }
+        )
 
         // Check for PM
         if (hasPrivateColor && !isFirstChatMutation && message.match(/Message Received:/g) && settings.notifyPM) {
@@ -1108,20 +1099,18 @@ function processMainChatRows(chatRows) {
             clanChat.insertBefore(clone, clanChat.firstChild)
 
             // Make right click listener for usernames in clan channel
-            if (settings.usernameClick) {
-                let link = clone.querySelector('a')
-                if (link !== null) {
-                    if (link.href.indexOf("javascript:m") === 0) {
-                        link.href = "javascript:" // Disable default behavior
-                        link.addEventListener("click", function (e) {
-                            unsafeWindow.m(this.textContent)
-                        })
-                        link.addEventListener("contextmenu", function (e) {
-                            e.preventDefault()
-                            unsafeWindow.viewPlayer(this.textContent)
-                            return false
-                        })
-                    }
+            let link = clone.querySelector('a')
+            if (link !== null) {
+                if (link.href.indexOf("javascript:m") === 0) {
+                    link.href = "javascript:" // Disable default behavior
+                    link.addEventListener("click", function (e) {
+                        unsafeWindow.m(this.textContent)
+                    })
+                    link.addEventListener("contextmenu", function (e) {
+                        e.preventDefault()
+                        unsafeWindow.viewPlayer(this.textContent)
+                        return false
+                    })
                 }
             }
 
@@ -1255,20 +1244,18 @@ function processMainChatRows(chatRows) {
         }
 
         // Make right click listener for usernames
-        if (settings.usernameClick) {
-            let link = row.querySelector('a')
-            if (link !== null) {
-                if (link.href.indexOf("javascript:m(") !== -1) {
-                    link.href = "javascript:" // Disable default behavior
-                    link.addEventListener("click", function (e) {
-                        unsafeWindow.m(this.textContent)
-                    })
-                    link.addEventListener("contextmenu", function (e) {
-                        e.preventDefault()
-                        unsafeWindow.viewPlayer(this.textContent)
-                        return false
-                    })
-                }
+        let link = row.querySelector('a')
+        if (link !== null) {
+            if (link.href.indexOf("javascript:m(") !== -1) {
+                link.href = "javascript:" // Disable default behavior
+                link.addEventListener("click", function (e) {
+                    unsafeWindow.m(this.textContent)
+                })
+                link.addEventListener("contextmenu", function (e) {
+                    e.preventDefault()
+                    unsafeWindow.viewPlayer(this.textContent)
+                    return false
+                })
             }
         }
     }
