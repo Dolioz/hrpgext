@@ -104,7 +104,7 @@ let settings = null, defaultSettings = {
     }
 
     // Show version in footer
-    document.getElementById('footer').textContent += "  ~~HExt v" + version + "~~"
+    document.getElementById('footer').textContent += "  ~~HRPGExt v" + version + "~~"
 
     // Restore user settings
     settings = await GM.getValue("HExt_settings", defaultSettings)
@@ -963,6 +963,10 @@ function processMainChatRows(chatRows) {
         let regexRare = /^(Global:.*)(Rare Treasure Chest|Rare Lockpick)(!)/
         let regexEpic = /^(Global:.*)(Epic Treasure Chest|Epic Lockpick)(!)/
         let regexLegendary = /^(Global:.*)(Legendary Treasure Chest|Legendary Lockpick)(!)/
+        let regexEpicStone = /^(Global:.*)(Epic Upgrade Stone) in a Rift Reward Chest./
+        let regexLegendaryStone = /^(Global:.*)(Legendary Upgrade Stone) in a Rift Reward Chest./
+
+        let 
         if (message.match(regexRare)) {
             let match = regexRare.exec(message)
             row.childNodes[0].lastChild.innerHTML = match[1] + "<span class='rare'>" + match[2] + "</span>" + match[3]
@@ -971,6 +975,12 @@ function processMainChatRows(chatRows) {
             row.childNodes[0].lastChild.innerHTML = match[1] + "<span class='epic'>" + match[2] + "</span>" + match[3]
         } else if (message.match(regexLegendary)) {
             let match = regexLegendary.exec(message)
+            row.childNodes[0].lastChild.innerHTML = match[1] + "<span class='legendary'>" + match[2] + "</span>" + match[3]
+        } else if (message.match(regexEpicStone)) {
+            let match = regexEpicStone.exec(message)
+            row.childNodes[0].lastChild.innerHTML = match[1] + "<span class='epic'>" + match[2] + "</span>" + match[3]
+        } else if (message.match(regexLegendaryStone)) {
+            let match = regexLegendaryStone.exec(message)
             row.childNodes[0].lastChild.innerHTML = match[1] + "<span class='legendary'>" + match[2] + "</span>" + match[3]
         }
 

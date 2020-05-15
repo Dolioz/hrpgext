@@ -29,6 +29,7 @@ Chrome
 - Coloring uncommen chests and lockpicks correctly in log
 - Coloring rare chests and lockpicks correctly in log and in globals
 - Coloring epic and legendary chests correctly in globals
+- Coloring epic and legendary upgrade stones from rift reward chests correctly in globals
 
 ## Toggleable UI Improvements
 
