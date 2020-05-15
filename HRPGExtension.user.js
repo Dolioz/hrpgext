@@ -966,7 +966,6 @@ function processMainChatRows(chatRows) {
         let regexEpicStone = /^(Global:.*)(Epic Upgrade Stone) in a Rift Reward Chest./
         let regexLegendaryStone = /^(Global:.*)(Legendary Upgrade Stone) in a Rift Reward Chest./
 
-        let 
         if (message.match(regexRare)) {
             let match = regexRare.exec(message)
             row.childNodes[0].lastChild.innerHTML = match[1] + "<span class='rare'>" + match[2] + "</span>" + match[3]
