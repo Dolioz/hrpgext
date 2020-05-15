@@ -141,7 +141,7 @@ let settings = null, defaultSettings = {
     createChannelButton(10, "Log")
     createChannelButton(100, "Statistics")
     headerMenuContainer = createChannel(3, "Menu")
-    settingsContainer = createChannel(4, "HRPG Extension")
+    settingsContainer = createChannel(4, "HRPGExt")
 
     prepareSettings()
     createHeaderMenu()
