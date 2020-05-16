@@ -963,8 +963,8 @@ function processMainChatRows(chatRows) {
         let regexRare = /^(Global:.*)(Rare Treasure Chest|Rare Lockpick)(!)/
         let regexEpic = /^(Global:.*)(Epic Treasure Chest|Epic Lockpick)(!)/
         let regexLegendary = /^(Global:.*)(Legendary Treasure Chest|Legendary Lockpick)(!)/
-        let regexEpicStone = /^(Global:.*)(Epic Upgrade Stone) in a Rift Reward Chest./
-        let regexLegendaryStone = /^(Global:.*)(Legendary Upgrade Stone) in a Rift Reward Chest./
+        let regexEpicStone = /^(Global:.*)(Epic Upgrade Stone)( in a Rift Reward Chest.)/
+        let regexLegendaryStone = /^(Global:.*)(Legendary Upgrade Stone)( in a Rift Reward Chest.)/
 
         if (message.match(regexRare)) {
             let match = regexRare.exec(message)
