@@ -16,7 +16,24 @@ Chrome
 - Create a new user script in tampermonkey
 - Copy the script from https://github.com/Dolioz/hrpgext/blob/master/HRPGExtension.user.js and replace the content of the new created user script with it
 
-## UI Improvements
+## Changelog
+
+### 2.0.0
+
+- [NEW] complete feature list in the documentation
+- [NEW] coloring epic and legendary upgrade stones from rift reward chests correctly in globals
+- [NEW] option to toggle sound notifications
+- [NEW] log filter for rare drops (chests, lockpicks, accessories)
+- [NEW] log filter for skill point drops
+- [NEW] log filter for armor/weapon fragment drops
+- [NEW] log filter for quest item drops
+- [CHANGED] settings menu renamed to "HRPGExt"
+- [CHANGED] show clan profile in clan menu is now a default feature
+- [CHANGED] sclickable links and right click for user profile are default features now
+- [REMOVED] crafting material usage estimation
+- [REMOVED] fixed pop up header
+
+## Feature List - UI Improvements
 
 - Add additional information to the browser tab:
   - [RS] = rift soon
@@ -31,20 +48,20 @@ Chrome
 - Coloring epic and legendary chests correctly in globals
 - Coloring epic and legendary upgrade stones from rift reward chests correctly in globals
 
-## Toggleable UI Improvements
+## Feature List - Toggleable UI Improvements
 
-### Desktop Notifications
+### Notifications
 
 - Enable sound notifications
-- Globals
-- Personal messages
-- Rift spawn and opening message
-- Trade chat messages
-- Clan messages
-- Clan globals
-- Quest completion
-- Crafting finish & material shortage
-- Item sold on market
+- Globals desktop notification
+- Personal messages desktop notification
+- Rift spawn and opening message desktop notification
+- Trade chat messages desktop notification
+- Clan messages desktop notification
+- Clan globals desktop notification
+- Quest completion desktop notification
+- Crafting finish & material shortage desktop notification
+- Item sold on market desktop notification
 
 ### Chat
 
