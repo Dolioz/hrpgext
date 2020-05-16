@@ -29,7 +29,7 @@ Chrome
 - [NEW] log filter for quest item drops
 - [CHANGED] settings menu renamed to "HRPGExt"
 - [CHANGED] show clan profile in clan menu is now a default feature
-- [CHANGED] sclickable links and right click for user profile are default features now
+- [CHANGED] clickable links and right click for user profile are default features now
 - [REMOVED] crafting material usage estimation
 - [REMOVED] fixed pop up header
 
