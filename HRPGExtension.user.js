@@ -211,7 +211,7 @@ let settings = null, defaultSettings = {
             row.style.display = settings.hideBattleQuest ? 'none' : 'table-row'
             let tr = document.createElement('tr')
             tr.className = "left-quest-action-battle"
-            tr.innerHTML = '<td></td><td class="greytext"><span>[<a href="javascript:questReroll(1)">Re-roll</a>] [<a href="javascript:questReduce(1)">Reduce</a>]</span></td>'
+            tr.innerHTML = '<td></td><td class="greytext"><span><a href="javascript:questReroll(1)">[Re-roll]</a> <a href="javascript:questReduce(1)">[Reduce]</a></span></td>'
             if (settings.quickQuest && !settings.hideBattleQuest) {
                 tr.style.display = 'table-row'
             } else {
@@ -222,7 +222,7 @@ let settings = null, defaultSettings = {
             row.style.display = settings.hideGatherQuest ? 'none' : 'table-row'
             let tr = document.createElement('tr')
             tr.className = "left-quest-action-gather"
-            tr.innerHTML = '<td></td><td class="greytext"><span>[<a href="javascript:questReroll(2)">Re-roll</a>] [<a href="javascript:questReduce(2)">Reduce</a>]</span></td>'
+            tr.innerHTML = '<td></td><td class="greytext"><span><a href="javascript:questReroll(2)">[Re-roll]</a> <a href="javascript:questReduce(2)">[Reduce]</a></span></td>'
             if (settings.quickQuest && !settings.hideGatherQuest) {
                 tr.style.display = 'table-row'
             } else {
@@ -270,7 +270,7 @@ let settings = null, defaultSettings = {
 
         let creditStoreLink = document.createElement('span')
         creditStoreLink.className = "cstore_btn greytext padl2"
-        creditStoreLink.innerHTML = '[<a href="javascript:creditStore(creditStoreTab)">Store</a>]'
+        creditStoreLink.innerHTML = '<a href="javascript:creditStore(creditStoreTab)">[Store]</a>'
         creditStoreLink.style.display = settings.creditStore ? 'inline-block' : 'none'
         creditsSpan.parentElement.appendChild(creditStoreLink)
     }
@@ -279,7 +279,7 @@ let settings = null, defaultSettings = {
     if (questHeaderRow) {
         let questPointsTr = document.createElement('tr')
         questPointsTr.className = "qp_row"
-        questPointsTr.innerHTML = '<tr><td>Points:</td><td><span id="ext_a_qp"></span><span class="greytext padl2">[<a href="javascript:creditStore(\'qp\')">Store</a>]</span></td></tr>'
+        questPointsTr.innerHTML = '<tr><td>Points:</td><td><span id="ext_a_qp"></span><span class="greytext padl2"><a href="javascript:creditStore(\'qp\')">[Store]</a></span></td></tr>'
         questPointsTr.style.display = settings.showQP ? 'table-row' : 'none'
         table.insertBefore(questPointsTr, questHeaderRow.nextElementSibling)
     }
