@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         HeroesRPG Extension
 // @namespace    https://github.com/dolioz/hrpgext
-// @version      2.0.0
+// @version      2.0.1
 // @description  Improves UI, does not automate gameplay
 // @downloadURL  https://github.com/Dolioz/hrpgext/raw/master/HRPGExtension.user.js
 // @updateURL    https://github.com/Dolioz/hrpgext/raw/master/HRPGExtension.user.js
@@ -32,8 +32,16 @@ let skillTuples = [
     { ids: [51, 52, 53], ratio: [1, 1, 1] },
     { ids: [54, 55, 56], ratio: [1, 1, 1] },
 ]
+let battleStats = {
+    kills: 0,
+    deaths: 0,
+    winRate: 100.00,
+    gold: 0,
+    goldHour: 0,
+}
 let channels = [], channelBtnContainer, clanChatContainer, clanChat, headerMenuContainer, settingsContainer
 let settings = null, defaultSettings = {
+    // notifications
     playSound: true,
     notifMyGlobal: true,
     notifyPM: true,
@@ -45,37 +53,16 @@ let settings = null, defaultSettings = {
     notifClanMessage: false,
     notifClanGlobal: false,
 
+    // chat
     shortenRiftKill: true,
     hideOthersGlobal: false,
     hideClanMembersGlobal: false,
     markGlobalsRead: true,
-
     clanChannel: true,
     clanHide: false,
-
     increaseChat: true,
 
-    startupGathering: false,
-    personalDH: false,
-    compareTiers: false,
-
-    hideHeader: true,
-    permanentScrollbar: true,
-
-    showPower: true,
-    attrBonus: false,
-    showQP: true,
-    hideBattleQuest: false,
-    hideGatherQuest: true,
-    quickQuest: true,
-
-    dhTimer: true,
-    enterRift: true,
-
-    creditStore: true,
-    creditStoreTab: "boosts",
-
-    // log settings
+    // log
     hideCommonDrops: true,
     hideUncommonDrops: false,
     hideRareDrops: false,
@@ -83,6 +70,28 @@ let settings = null, defaultSettings = {
     hideFragmentDrops: false,
     hideQuestItemDrops: false,
     hideLevelUps: false,
+
+    // compact ui
+    hideHeader: true,
+    showBattleStats: true,
+    hideStatistics: false,
+    showOnlyT4Skills: false,
+    showPower: true,
+    showAttrBonus: false,
+    showQP: true,
+    quickQuest: true,
+    hideBattleQuest: false,
+    hideGatherQuest: true,
+
+    // misc
+    startupGathering: false,
+    personalDH: false,
+    compareTiers: false,
+    permanentScrollbar: true,
+    showDhTimer: true,
+    showEnterRiftButton: true,
+    creditStore: true,
+    creditStoreTab: "boosts",
 };
 
 (async function () {
@@ -140,12 +149,10 @@ let settings = null, defaultSettings = {
     clanChatContainer = createChannel(2, "Clan")
     createChannelButton(10, "Log")
     createChannelButton(100, "Statistics")
-    headerMenuContainer = createChannel(3, "Menu")
     settingsContainer = createChannel(4, "HRPGExt")
 
     prepareSettings()
-    createHeaderMenu()
-    toggleHeader()
+    toggleUI()
     prepareClanChannel()
     cachePlayerClanId()
     await cacheClanMember()
@@ -182,18 +189,18 @@ let settings = null, defaultSettings = {
     // Add extra stats into the left menu
     let table = document.querySelector('#main-stats tbody')
 
-    // Double and haste timer
-    let dhTimeTr = document.createElement('tr')
-    dhTimeTr.id = "dhtimerow"
-    dhTimeTr.innerHTML = '<td colspan="2" style="text-align: center; font-size: 10px" id="dhtime">Checking DH status...</td>'
-    dhTimeTr.style.display = settings.dhTimer ? 'table-row' : 'none'
-    table.appendChild(dhTimeTr)
+    // DH timer
+    let dhTimer = document.createElement('tr')
+    dhTimer.className = "dhtimerrow"
+    dhTimer.innerHTML = '<td colspan="2" style="text-align: center; font-size: 10px" id="dhtime">Checking DH status...</td>'
+    dhTimer.style.display = settings.showDhTimer ? 'table-row' : 'none'
+    table.appendChild(dhTimer)
 
     // Static enter rift button
     let enterRift = document.createElement('tr')
-    enterRift.id = "enterRift"
-    enterRift.innerHTML = '<td></td><td class=".greytext">[<a href="javascript:enterRift()">Enter Rift</a>]</td>'
-    enterRift.style.display = settings.enterRift ? 'table-row' : 'none'
+    enterRift.className = "enterriftrow"
+    enterRift.innerHTML = '<td colspan="2" style="text-align: center; font-size: 10px"><a href="javascript:enterRift()">[Enter Rift]</a></td>'
+    enterRift.style.display = settings.showEnterRiftButton ? 'table-row' : 'none'
     table.appendChild(enterRift)
 
     let financialHeaderRow = null, questHeaderRow = null
@@ -237,7 +244,7 @@ let settings = null, defaultSettings = {
             let attrBonus = document.createElement('span')
             attrBonus.className = "attr_bonus g-green smol"
             attrBonus.id = "ext_" + attr + "_bonus"
-            attrBonus.style.display = settings.attrBonus ? 'inline-block' : 'none'
+            attrBonus.style.display = settings.showAttrBonus ? 'inline-block' : 'none'
             attrElement.parentElement.appendChild(attrBonus)
         }
     }
@@ -273,16 +280,47 @@ let settings = null, defaultSettings = {
         let questPointsTr = document.createElement('tr')
         questPointsTr.className = "qp_row"
         questPointsTr.innerHTML = '<tr><td>Points:</td><td><span id="ext_a_qp"></span><span class="greytext padl2">[<a href="javascript:creditStore(\'qp\')">Store</a>]</span></td></tr>'
-        questPointsTr.style.display = settings.dhTimer ? 'table-row' : 'none'
+        questPointsTr.style.display = settings.showQP ? 'table-row' : 'none'
         table.insertBefore(questPointsTr, questHeaderRow.nextElementSibling)
     }
 
+    // Battle stats
+    let battleStatsDiv = document.createElement('div')
+    let battleStatsTable = document.createElement('table')
+    let battleStatsTbody = document.createElement('tbody')
+    battleStatsDiv.appendChild(battleStatsTable)
+    battleStatsTable.appendChild(battleStatsTbody)
+    let battleStatsheader = document.createElement('tr')
+    battleStatsheader.className = "battlestats"
+    battleStatsheader.innerHTML = '<th colspan="2">Battle Stats</th>'
+    battleStatsheader.style.display = settings.showBattleStats ? 'table-row' : 'none'
+    battleStatsTbody.appendChild(battleStatsheader)
+
+    let battleStatsWinRate = document.createElement('tr')
+    battleStatsWinRate.className = "battlestats"
+    battleStatsWinRate.innerHTML = '<td colspan="2" style="text-align: center; font-size: 10px" id="battlestatstext">' + battleStats.kills + '/' + battleStats.deaths + ' (' + battleStats.winRate + '%)</td>'
+    battleStatsWinRate.style.display = settings.showBattleStats ? 'table-row' : 'none'
+    battleStatsTbody.appendChild(battleStatsWinRate)
+
+    let battleStatsGold = document.createElement('tr')
+    battleStatsGold.className = "battlestats"
+    battleStatsGold.innerHTML = '<td colspan="2" style="text-align: center; font-size: 10px" id="goldstatstext">' + battleStats.gold + ' (' + battleStats.goldHour + '/hr)</td>'
+    battleStatsGold.style.display = settings.showBattleStats ? 'table-row' : 'none'
+    battleStatsTbody.appendChild(battleStatsGold)
+
+    let battleStatsReset = document.createElement('tr')
+    battleStatsReset.className = "battlestats"
+    battleStatsReset.innerHTML = '<td colspan="2" style="text-align: center; font-size: 10px"><a href="javascript:statReset(\'stats_kills|stats_deaths|stats_perc|stats_damage|stats_gold|stats_gold_hour|stats_gold_donated|stats_gold_donated_hour|stats_exp|stats_exp_hour|stats_cp|stats_cp_hour\',0)">[Reset]</a></td>'
+    battleStatsReset.style.display = settings.showBattleStats ? 'table-row' : 'none'
+    battleStatsTbody.appendChild(battleStatsReset)
+    document.getElementById('holder-right').insertBefore(battleStatsDiv, document.getElementById('tright'))
+
     // Wait a sec for chat to be ready, just to be sure...
     setTimeout(function () {
-        if (settings.dhTimer) {
+        if (settings.showDhTimer) {
             sendCommand('dh')
         }
-        if (settings.showPower || settings.attrBonus) {
+        if (settings.showPower || settings.showAttrBonus) {
             sendCommand('stats')
         }
         if (settings.showQP) {
@@ -395,6 +433,7 @@ let settings = null, defaultSettings = {
                         mutation.startEdit()
                         mutation.target.innerHTML = addGemInfo(mutation.target.innerHTML)
                     }
+
                     if (mutation.target.id === "equipment-popup-content") {
                         // If popup content has been cleared do nothing and wait for the next mutation
                         if (mutation.target.innerHTML === "") {
@@ -422,6 +461,35 @@ let settings = null, defaultSettings = {
                                 notify("You have run out of material!")
                             }
                         }
+                    }
+
+                    // Stats section
+                    if (mutation.target.id === "stats_kills") {
+                        battleStats.kills = mutation.target.innerText
+                    }
+
+                    if (mutation.target.id === "stats_deaths") {
+                        battleStats.deaths = mutation.target.innerText
+                    }
+
+                    if (mutation.target.id === "stats_perc") {
+                        battleStats.winRate = mutation.target.innerText
+                    }
+
+                    if (mutation.target.id === "stats_gold") {
+                        battleStats.gold = mutation.target.innerText
+                    }
+
+                    if (mutation.target.id === "stats_gold_hour") {
+                        battleStats.goldHour = mutation.target.innerText
+                    }
+
+                    if (settings.showBattleStats && (
+                        mutation.target.id === "stats_kills" ||
+                        mutation.target.id === "stats_deaths" ||
+                        mutation.target.id === "stats_gold" ||
+                        mutation.target.id === "stats_gold_hour")) {
+                        updateBattleStatsUI()
                     }
                 } else {
                     mutation.endEdit()
@@ -453,75 +521,94 @@ async function prepareSettings() {
     }
 
     // Create HTML elements for settings
-    let notifMenu = document.createElement('div')
-    notifMenu.className = "settings table-style col-4"
+    let leftMenu = document.createElement('div')
+    leftMenu.className = "settings table-style col-4"
+    let headerLinksHeader = document.createElement("div")
+    headerLinksHeader.textContent = "Header Links"
+    headerLinksHeader.className = "category-header"
+    leftMenu.appendChild(headerLinksHeader)
+    leftMenu.appendChild(createLink('index.php?logout', 'Logout'))
+    leftMenu.appendChild(document.createElement('br'))
+    leftMenu.appendChild(createLink('javascript:forum()', 'Forum'))
+    leftMenu.appendChild(createLink('http://www.heroesrpg.com/wiki/wiki.html', 'Wiki', true))
+    leftMenu.appendChild(createLink('javascript:achievements()', 'Achievements'))
+    leftMenu.appendChild(document.createElement('br'))
+    leftMenu.appendChild(createLink('javascript:ref()', 'Referrals'))
+    leftMenu.appendChild(createLink('javascript:rules()', 'Rules'))
+    leftMenu.appendChild(document.createElement('br'))
+    leftMenu.appendChild(createLink('javascript:displayPref()', 'Preferences'))
+    leftMenu.appendChild(document.createElement('br'))
+    leftMenu.appendChild(createLink('javascript:viewLeaderboards(1)', 'Leaderboards'))
     let notifHeader = document.createElement("div")
     notifHeader.textContent = "Notifications"
     notifHeader.className = "category-header"
-    notifMenu.appendChild(notifHeader)
-    notifMenu.appendChild(createCheckbox("playSound", "Enable sound notifications", "setting bold"))
-    notifMenu.appendChild(createCheckbox("notifMyGlobal", "Notify my globals", "setting g-green"))
-    notifMenu.appendChild(createCheckbox("notifyPM", "Notify personal messages", "setting red"))
-    notifMenu.appendChild(createCheckbox("notifRift", "Notify rift opening", "setting purple"))
-    notifMenu.appendChild(createCheckbox("notifTrade", "Notify trade chat", "setting d-green"))
-    notifMenu.appendChild(createCheckbox("notifClanMessage", "Notify clan messages", "setting yellow"))
-    notifMenu.appendChild(createCheckbox("notifClanGlobal", "Notify clan globals", "setting yellow"))
-    notifMenu.appendChild(createCheckbox("notifyQuest", "Notify quest completion", "setting"))
-    notifMenu.appendChild(createCheckbox("notifyCrafting", "Notify crafting finish & mat. shortage", "setting"))
-    notifMenu.appendChild(createCheckbox("notifySales", "Notify items sold on market", "setting"))
-    notifMenu.appendChild(document.createElement('br'))
-    settingsContainer.appendChild(notifMenu)
+    leftMenu.appendChild(notifHeader)
+    leftMenu.appendChild(createCheckbox("playSound", "Enable sound notifications", "setting bold"))
+    leftMenu.appendChild(createCheckbox("notifMyGlobal", "Notify my globals", "setting g-green"))
+    leftMenu.appendChild(createCheckbox("notifyPM", "Notify personal messages", "setting red"))
+    leftMenu.appendChild(createCheckbox("notifRift", "Notify rift opening", "setting purple"))
+    leftMenu.appendChild(createCheckbox("notifTrade", "Notify trade chat", "setting d-green"))
+    leftMenu.appendChild(createCheckbox("notifClanMessage", "Notify clan messages", "setting yellow"))
+    leftMenu.appendChild(createCheckbox("notifClanGlobal", "Notify clan globals", "setting yellow"))
+    leftMenu.appendChild(createCheckbox("notifyQuest", "Notify quest completion", "setting"))
+    leftMenu.appendChild(createCheckbox("notifyCrafting", "Notify crafting finish & mat. shortage", "setting"))
+    leftMenu.appendChild(createCheckbox("notifySales", "Notify items sold on market", "setting"))
+    settingsContainer.appendChild(leftMenu)
 
-    let chatMenu = document.createElement('div')
-    chatMenu.className = "settings table-style col-4"
+    let middleMenu = document.createElement('div')
+    middleMenu.className = "settings table-style col-4"
     let chatHeader = document.createElement("div")
     chatHeader.textContent = "Chat"
     chatHeader.className = "category-header"
-    chatMenu.appendChild(chatHeader)
-    chatMenu.appendChild(createCheckbox("shortenRiftKill", "Shorten rift kill globals", "setting g-green"))
-    chatMenu.appendChild(createCheckbox("hideOthersGlobal", "Hide most non clan member globals", "setting g-green", refreshChatVisibility))
-    chatMenu.appendChild(createCheckbox("hideClanMembersGlobal", "Hide most clan member globals", "setting g-green", refreshChatVisibility))
-    chatMenu.appendChild(createCheckbox("markGlobalsRead", "Exclude most globals from unread count", "setting g-green"))
-    chatMenu.appendChild(createCheckbox("clanChannel", "Separate clan channel", "setting yellow", changeChannelVisibility.bind(null, 'chat2', 'clanChannel')))
-    chatMenu.appendChild(createCheckbox("clanHide", "Hide clan messages from main channel", "setting yellow", refreshChatVisibility))
-    chatMenu.appendChild(createCheckbox("increaseChat", "Increase chat size limit to 1000", "setting", changeChatSizeLimit))
-    chatMenu.appendChild(document.createElement('br'))
+    middleMenu.appendChild(chatHeader)
+    middleMenu.appendChild(createCheckbox("shortenRiftKill", "Shorten rift kill globals", "setting g-green"))
+    middleMenu.appendChild(createCheckbox("hideOthersGlobal", "Hide most non clan member globals", "setting g-green", refreshChatVisibility))
+    middleMenu.appendChild(createCheckbox("hideClanMembersGlobal", "Hide most clan member globals", "setting g-green", refreshChatVisibility))
+    middleMenu.appendChild(createCheckbox("markGlobalsRead", "Exclude most globals from unread count", "setting g-green"))
+    middleMenu.appendChild(createCheckbox("clanChannel", "Separate clan channel", "setting yellow", changeChannelVisibility.bind(null, 'chat2', 'clanChannel')))
+    middleMenu.appendChild(createCheckbox("clanHide", "Hide clan messages from main channel", "setting yellow", refreshChatVisibility))
+    middleMenu.appendChild(createCheckbox("increaseChat", "Increase chat size limit to 1000", "setting", changeChatSizeLimit))
     let logHeader = document.createElement("div")
     logHeader.textContent = "Log"
     logHeader.className = "category-header"
-    chatMenu.appendChild(logHeader)
-    chatMenu.appendChild(createCheckbox("hideCommonDrops", "Hide Common/Fractured drops", "setting white", refreshDropVisibility))
-    chatMenu.appendChild(createCheckbox("hideUncommonDrops", "Hide Uncommon/Chipped drops", "setting white", refreshDropVisibility))
-    chatMenu.appendChild(createCheckbox("hideRareDrops", "Hide Rare drops", "setting white", refreshDropVisibility))
-    chatMenu.appendChild(createCheckbox("hideSpDrops", "Hide SP drops", "setting white", refreshDropVisibility))
-    chatMenu.appendChild(createCheckbox("hideFragmentDrops", "Hide armor/weapon fragment drops", "setting white", refreshDropVisibility))
-    chatMenu.appendChild(createCheckbox("hideQuestItemDrops", "Hide quest item drops", "setting white", refreshDropVisibility))
-    chatMenu.appendChild(createCheckbox("hideLevelUps", "Hide level ups", "setting white", refreshDropVisibility))
-    chatMenu.appendChild(document.createElement('br'))
-    settingsContainer.appendChild(chatMenu)
+    middleMenu.appendChild(logHeader)
+    middleMenu.appendChild(createCheckbox("hideCommonDrops", "Hide Common/Fractured drops", "setting white", refreshDropVisibility))
+    middleMenu.appendChild(createCheckbox("hideUncommonDrops", "Hide Uncommon/Chipped drops", "setting white", refreshDropVisibility))
+    middleMenu.appendChild(createCheckbox("hideRareDrops", "Hide Rare drops", "setting white", refreshDropVisibility))
+    middleMenu.appendChild(createCheckbox("hideSpDrops", "Hide SP drops", "setting white", refreshDropVisibility))
+    middleMenu.appendChild(createCheckbox("hideFragmentDrops", "Hide armor/weapon fragment drops", "setting white", refreshDropVisibility))
+    middleMenu.appendChild(createCheckbox("hideQuestItemDrops", "Hide quest item drops", "setting white", refreshDropVisibility))
+    middleMenu.appendChild(createCheckbox("hideLevelUps", "Hide level ups", "setting white", refreshDropVisibility))
+    settingsContainer.appendChild(middleMenu)
 
-    let otherMenu = document.createElement('div')
-    otherMenu.className = "settings table-style col-4"
-    let otherHeader = document.createElement("div")
-    otherHeader.textContent = "Misc"
-    otherHeader.className = "category-header"
-    otherMenu.appendChild(otherHeader)
-    otherMenu.appendChild(createCheckbox("startupGathering", "Set gathering as startup screen", "setting"))
-    otherMenu.appendChild(createCheckbox("personalDH", "Ask confirmation on personal DH", "setting"))
-    otherMenu.appendChild(createCheckbox("compareTiers", "Tell about cheaper skill tiers", "setting"))
-    otherMenu.appendChild(createCheckbox("hideHeader", "Hide game header", "setting", toggleHeader))
-    otherMenu.appendChild(createCheckbox("permanentScrollbar", "Permanent scrollbar (requires refresh)", "setting"))
-    otherMenu.appendChild(document.createElement('br'))
-    otherMenu.appendChild(createCheckbox("showPower", "Show power and armor", "setting", changeClassDisplay.bind(null, 'power_row', 'showPower', 'table-row')))
-    otherMenu.appendChild(createCheckbox("attrBonus", "Show attribute bonus", "setting", changeClassDisplay.bind(null, 'attr_bonus', 'attrBonus', 'inline-block')))
-    otherMenu.appendChild(createCheckbox("showQP", "Show quest points (updates on quest completion)", "setting", changeClassDisplay.bind(null, 'qp_row', 'showQP', 'table-row')))
-    otherMenu.appendChild(createCheckbox("hideBattleQuest", "Hide battle quests", "setting", changeQuestVisibility))
-    otherMenu.appendChild(createCheckbox("hideGatherQuest", "Hide gather quests", "setting", changeQuestVisibility))
-    otherMenu.appendChild(createCheckbox("quickQuest", "Show quest re-roll/reduce buttons", "setting", changeQuestVisibility))
-    otherMenu.appendChild(createCheckbox("dhTimer", "Show remaining DH timer", "setting", changeDHTimerSetting))
-    otherMenu.appendChild(createCheckbox("enterRift", "Show enter rift button", "setting purple", toggleEnterRift))
-    otherMenu.appendChild(createCheckbox("creditStore", "Show store link next to credits", "setting", changeClassDisplay.bind(null, 'cstore_btn', 'creditStore', 'inline-block')))
-    otherMenu.appendChild(createSelect("creditStoreTab", "Which tab credit store link will open", "setting", [
+    let rightMenu = document.createElement('div')
+    rightMenu.className = "settings table-style col-4"
+    let compactUiHeader = document.createElement("div")
+    compactUiHeader.textContent = "Compact UI"
+    compactUiHeader.className = "category-header"
+    rightMenu.appendChild(compactUiHeader)
+    rightMenu.appendChild(createCheckbox("hideHeader", "Hide game header", "setting", toggleUI))
+    rightMenu.appendChild(createCheckbox("showBattleStats", "Show compact battle stats", "setting", changeClassDisplay.bind(null, 'battlestats', 'showBattleStats', 'table-row')))
+    rightMenu.appendChild(createCheckbox("hideStatistics", "Hide statistics menu", "setting", toggleUI))
+    rightMenu.appendChild(createCheckbox("showOnlyT4Skills", "Show only T4 battle skills", "setting", toggleUI))
+    rightMenu.appendChild(createCheckbox("showPower", "Show power and armor", "setting", changeClassDisplay.bind(null, 'power_row', 'showPower', 'table-row')))
+    rightMenu.appendChild(createCheckbox("showAttrBonus", "Show attribute bonus", "setting", changeClassDisplay.bind(null, 'attr_bonus', 'showAttrBonus', 'inline-block')))
+    rightMenu.appendChild(createCheckbox("showQP", "Show quest points (updates on quest completion)", "setting", changeClassDisplay.bind(null, 'qp_row', 'showQP', 'table-row')))
+    rightMenu.appendChild(createCheckbox("quickQuest", "Show quest re-roll/reduce buttons", "setting", changeQuestVisibility))
+    rightMenu.appendChild(createCheckbox("hideBattleQuest", "Hide battle quests", "setting", changeQuestVisibility))
+    rightMenu.appendChild(createCheckbox("hideGatherQuest", "Hide gather quests", "setting", changeQuestVisibility))
+    let miscHeader = document.createElement("div")
+    miscHeader.textContent = "Misc"
+    miscHeader.className = "category-header"
+    rightMenu.appendChild(miscHeader)
+    rightMenu.appendChild(createCheckbox("startupGathering", "Set gathering as startup screen", "setting"))
+    rightMenu.appendChild(createCheckbox("personalDH", "Ask confirmation on personal DH", "setting"))
+    rightMenu.appendChild(createCheckbox("compareTiers", "Tell about cheaper skill tiers", "setting"))
+    rightMenu.appendChild(createCheckbox("permanentScrollbar", "Permanent scrollbar (requires refresh)", "setting"))
+    rightMenu.appendChild(createCheckbox("showDhTimer", "Show remaining DH timer", "setting", changeClassDisplay.bind(null, 'dhtimerow', 'showDhTimer', 'table-row')))
+    rightMenu.appendChild(createCheckbox("showEnterRiftButton", "Show enter rift button", "setting purple", changeClassDisplay.bind(null, 'enterriftrow', 'showEnterRiftButton', 'table-row')))
+    rightMenu.appendChild(createCheckbox("creditStore", "Show store link next to credits", "setting", changeClassDisplay.bind(null, 'cstore_btn', 'creditStore', 'inline-block')))
+    rightMenu.appendChild(createSelect("creditStoreTab", "Which tab credit store link will open", "setting", [
         { value: "purchase", text: "Purchase Credits" },
         { value: "boosts", text: "Boosts" },
         { value: "upgrades", text: "Autos" },
@@ -529,34 +616,7 @@ async function prepareSettings() {
         { value: "lp", text: "Loyalty Points" },
         { value: "qp", text: "Quest Points" },
     ]))
-    otherMenu.appendChild(document.createElement('br'))
-
-    settingsContainer.appendChild(otherMenu)
-}
-
-function createHeaderMenu() {
-    // Create HTML elements for header menu
-    let headerMenu = document.createElement('div')
-    headerMenu.className = "settings table-style col-100 right"
-    let otherMenuHeader = document.createElement("div")
-    otherMenuHeader.textContent = "Header Links"
-    otherMenuHeader.className = "category-header"
-    headerMenu.appendChild(otherMenuHeader)
-
-    headerMenu.appendChild(createLink('index.php?logout', 'Logout'))
-    headerMenu.appendChild(document.createElement('br'))
-    headerMenu.appendChild(createLink('javascript:forum()', 'Forum'))
-    headerMenu.appendChild(createLink('http://www.heroesrpg.com/wiki/wiki.html', 'Wiki', true))
-    headerMenu.appendChild(createLink('javascript:achievements()', 'Achievements'))
-    headerMenu.appendChild(document.createElement('br'))
-    headerMenu.appendChild(createLink('javascript:ref()', 'Referrals'))
-    headerMenu.appendChild(createLink('javascript:rules()', 'Rules'))
-    headerMenu.appendChild(document.createElement('br'))
-    headerMenu.appendChild(createLink('javascript:displayPref()', 'Preferences'))
-    headerMenu.appendChild(document.createElement('br'))
-    headerMenu.appendChild(createLink('javascript:viewLeaderboards(1)', 'Leaderboards'))
-
-    headerMenuContainer.appendChild(headerMenu)
+    settingsContainer.appendChild(rightMenu)
 }
 
 function createLink(href, text, newTab) {
@@ -580,6 +640,21 @@ MutationRecord.prototype.startEdit = function () {
 
 MutationRecord.prototype.endEdit = function () {
     delete this.target.dataset.editing
+}
+
+function toggleUI() {
+    settings.hideHeader ? $("#header").hide() : $("#header").show()
+    settings.hideStatistics ? $("#Statistics").hide() : $("#Statistics").show()
+    let skillTable = document.getElementById('tright_select')
+    skillTable.parentElement.parentElement.style.display = settings.showOnlyT4Skills ? 'none' : ''
+    settings.showOnlyT4Skills ? $("#tier-header-1").hide() : $("#tier-header-1").show()
+    settings.showOnlyT4Skills ? $("#tier-header-2").hide() : $("#tier-header-2").show()
+    settings.showOnlyT4Skills ? $("#tier-header-3").hide() : $("#tier-header-3").show()
+    settings.showOnlyT4Skills ? $("#tier-header-4").hide() : $("#tier-header-4").show()
+    settings.showOnlyT4Skills ? $(".tier-1-row").hide() : $(".tier-1-row").show()
+    settings.showOnlyT4Skills ? $(".tier-2-row").hide() : $(".tier-2-row").hide()
+    settings.showOnlyT4Skills ? $(".tier-3-row").hide() : $(".tier-3-row").hide()
+    settings.showOnlyT4Skills ? $(".tier-4-row").show() : $(".tier-4-row").hide()
 }
 
 function refreshChatVisibility() {
@@ -638,30 +713,29 @@ function changeClassDisplay(elementClass, settingName, display) {
     // Update data for few settings when they are turned on
     if (settings[settingName]) {
         switch (settingName) {
-            case 'showQP': unsafeWindow.updateQuestPoints(); break
+            case 'showQP':
+                unsafeWindow.updateQuestPoints();
+                break
             case 'showPower':
-            case 'attrBonus': sendCommand('stats'); break
+            case 'showAttrBonus':
+                sendCommand('stats');
+                break
+            case "showDhTimer":
+                if (settings.showDhTimer) {
+                    sendCommand('dh')
+                } else {
+                    if (dhInterval !== null) {
+                        clearInterval(dhInterval)
+                    }
+                    dhInterval = null
+                }
+                break
         }
     }
 }
 
 function changeChatSizeLimit() {
     unsafeWindow.chatsize = settings.increaseChat ? 1000 : 100
-}
-
-function changeDHTimerSetting() {
-    let dhTimerRow = document.getElementById('dhtimerow')
-    if (dhTimerRow !== null) {
-        dhTimerRow.style.display = settings.dhTimer ? 'table-row' : 'none'
-        if (settings.dhTimer) {
-            sendCommand('dh')
-        } else {
-            if (dhInterval !== null) {
-                clearInterval(dhInterval)
-            }
-            dhInterval = null
-        }
-    }
 }
 
 function prepareClanChannel() {
@@ -1054,7 +1128,7 @@ function processMainChatRows(chatRows) {
                 }
 
                 // Do we need to update inner dh timer?
-                if (settings.dhTimer && message.match(/^Global: Everyone will receive (Double Haste|Double|Haste)/i)) {
+                if (settings.showDhTimer && message.match(/^Global: Everyone will receive (Double Haste|Double|Haste)/i)) {
                     sendCommand('dh')
                 }
             }
@@ -1068,7 +1142,7 @@ function processMainChatRows(chatRows) {
             }
 
             // Do we need to update inner dh timer?
-            if (settings.dhTimer && message.match(/^Clan Global: Your Clan has activated /)) {
+            if (settings.showDhTimer && message.match(/^Clan Global: Your Clan has activated /)) {
                 sendCommand('dh')
             }
 
@@ -1154,7 +1228,7 @@ function processMainChatRows(chatRows) {
         }
 
         // Do we need to update inner dh timer?
-        if (settings.dhTimer && message.match(/of personal Double Haste./)) {
+        if (settings.showDhTimer && message.match(/of personal Double Haste./)) {
             sendCommand('dh')
         }
 
@@ -1184,7 +1258,7 @@ function processMainChatRows(chatRows) {
                     }
                 }
             }
-            if (settings.dhTimer) {
+            if (settings.showDhTimer) {
                 if (dhInterval !== null) {
                     clearInterval(dhInterval)
                 }
@@ -1216,7 +1290,7 @@ function processMainChatRows(chatRows) {
             // Find /stats command result in chat, parse and then hide it
             let stats = message.match(/Strength: ([\d,]+)Dexterity: ([\d,]+)Stamina: ([\d,]+)Power: ([\d,]+)Armor: ([\d,]+)/)
             if (stats) {
-                if (settings.attrBonus) {
+                if (settings.showAttrBonus) {
                     let _attributes = ['a_str', 'a_dex', 'a_sta']
                     for (let ai = 0, attr; attr = _attributes[ai]; ai++) {
                         let baseAttrElement = document.getElementById(attr)
@@ -1350,6 +1424,13 @@ function updateDHTimer(keepTime) {
     if (dhTimeTd !== null) {
         dhTimeTd.innerHTML = message + timeStr
     }
+}
+
+function updateBattleStatsUI() {
+    let battleStatsWinRate = document.getElementById('battlestatstext')
+    battleStatsWinRate.innerText = battleStats.kills + '/' + battleStats.deaths + ' (' + battleStats.winRate + '%)'
+    let battleStatsGold = document.getElementById('goldstatstext')
+    battleStatsGold.innerText = battleStats.gold + ' (' + battleStats.goldHour + '/hr)'
 }
 
 function sendCommand(command) {
@@ -1591,6 +1672,7 @@ function createChannel(id, name) {
 
 function createChannelButton(channelId, name) {
     let button = document.createElement('button')
+    button.id = name
     button.dataset.channel = "chat" + channelId
     button.channelNumber = channelId
     button.addEventListener('click', function () {
@@ -1768,26 +1850,6 @@ function addStyleSheet() {
 
     if (settings.permanentScrollbar) {
         sheet.insertRule('html {overflow-y: scroll;}', sheet.cssRules.length)
-    }
-}
-
-function toggleHeader() {
-    let header = document.getElementById("header")
-    if (settings.hideHeader) {
-        header.style.display = "none"
-        changeChannelVisibility('chat3', 'hideHeader')
-    } else {
-        header.style.display = "block"
-        changeChannelVisibility('chat3', 'hideHeader')
-    }
-}
-
-function toggleEnterRift() {
-    let enterRift = document.getElementById("enterRift")
-    if (settings.enterRift) {
-        enterRift.style.display = "table-row"
-    } else {
-        enterRift.style.display = "none"
     }
 }
 

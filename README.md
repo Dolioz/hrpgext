@@ -18,6 +18,13 @@ Chrome
 
 ## Changelog
 
+### 2.0.1
+
+- [NEW] option to show only T4 battle skills
+- [NEW] option to show compact battle stats
+- [NEW] optopn to hide statistics menu
+- [CHANGED] moved header links to HRPGExt menu
+
 ### 2.0.0
 
 - [NEW] complete feature list in the documentation
@@ -85,19 +92,28 @@ Chrome
 - Hide quest item drops
 - Hide level ups
 
-### Misc
+### Compact UI
 
-- Set gathering as startup screen
-- Ask confirmation on personal double haste
-- Show cheaper skill tiers (compares cost efficiency between T1, T2 and T3)
 - Hide game header (adds the links of the header as separate menu)
-- Permanend scrollbar to prevent UI moving when switching between chat and statistics (requires refresh after change)
+- Show compact battle stats:
+    - Kills/Deaths (Win Rate)
+    - Gold (Gold per hour)
+- Hide statistics menu
+- Show only T4 battle skills
 - Show power and armor in UI (updates when remove/equip gear and when chat command "/stats" is executed)
 - Show attribute bonus in UI (updates when chat command "/stats" is executed)
 - Show quest points in UI with link to the quest point stopre (updates only on quest completion, not when buying stuff from the store)
 - Hide battle quests (useful for gathers)
 - Hide gather quests (useful for battlers)
 - Show quest re-reoll/reduce buttons (requires on click less then Carls quick link)
+
+### Misc
+
+- Set gathering as startup screen
+- Ask confirmation on personal double haste
+- Show cheaper skill tiers (compares cost efficiency between T1, T2 and T3)
+- Permanend scrollbar to prevent UI moving when switching between chat and statistics (requires refresh after change)
 - Show DH timer in UI
 - Show static [Enter Rift] button in UI
 - Show configurable store link next to credits in UI
+
