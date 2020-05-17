@@ -95,11 +95,11 @@ Chrome
 ### Compact UI
 
 - Hide game header (adds the links of the header as separate menu)
-- Show only T4 battle skills
 - Show compact battle stats:
     - Kills/Deaths (Win Rate)
     - Gold (Gold per hour)
 - Hide statistics menu
+- Show only T4 battle skills
 - Show power and armor in UI (updates when remove/equip gear and when chat command "/stats" is executed)
 - Show attribute bonus in UI (updates when chat command "/stats" is executed)
 - Show quest points in UI with link to the quest point stopre (updates only on quest completion, not when buying stuff from the store)

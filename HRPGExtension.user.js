@@ -73,9 +73,9 @@ let settings = null, defaultSettings = {
 
     // compact ui
     hideHeader: true,
-    showOnlyT4Skills: false,
     showBattleStats: true,
     hideStatistics: false,
+    showOnlyT4Skills: false,
     showPower: true,
     showAttrBonus: false,
     showQP: true,
@@ -588,9 +588,9 @@ async function prepareSettings() {
     compactUiHeader.className = "category-header"
     rightMenu.appendChild(compactUiHeader)
     rightMenu.appendChild(createCheckbox("hideHeader", "Hide game header", "setting", toggleUI))
-    rightMenu.appendChild(createCheckbox("showOnlyT4Skills", "Show only T4 battle skills", "setting", toggleUI))
     rightMenu.appendChild(createCheckbox("showBattleStats", "Show compact battle stats", "setting", changeClassDisplay.bind(null, 'battlestats', 'showBattleStats', 'table-row')))
     rightMenu.appendChild(createCheckbox("hideStatistics", "Hide statistics menu", "setting", toggleUI))
+    rightMenu.appendChild(createCheckbox("showOnlyT4Skills", "Show only T4 battle skills", "setting", toggleUI))
     rightMenu.appendChild(createCheckbox("showPower", "Show power and armor", "setting", changeClassDisplay.bind(null, 'power_row', 'showPower', 'table-row')))
     rightMenu.appendChild(createCheckbox("showAttrBonus", "Show attribute bonus", "setting", changeClassDisplay.bind(null, 'attr_bonus', 'showAttrBonus', 'inline-block')))
     rightMenu.appendChild(createCheckbox("showQP", "Show quest points (updates on quest completion)", "setting", changeClassDisplay.bind(null, 'qp_row', 'showQP', 'table-row')))
