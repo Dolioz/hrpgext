@@ -466,25 +466,30 @@ let settings = null, defaultSettings = {
                     // Stats section
                     if (mutation.target.id === "stats_kills") {
                         battleStats.kills = mutation.target.innerText
-                    } else if (mutation.target.id === "stats_deaths") {
-                        battleStats.deaths = mutation.target.innerText
-                    } else if (mutation.target.id === "stats_perc") {
-                        battleStats.winRate = mutation.target.innerText
-                        if (settings.showBattleStats) {
-                            updateBattleStatsUI()
-                        }
                     }
+
+                    if (mutation.target.id === "stats_deaths") {
+                        battleStats.deaths = mutation.target.innerText
+                    }
+
+                    if (mutation.target.id === "stats_perc") {
+                        battleStats.winRate = mutation.target.innerText
+                    }
+
                     if (mutation.target.id === "stats_gold") {
                         battleStats.gold = mutation.target.innerText
-                        if (settings.showBattleStats) {
-                            updateBattleStatsUI()
-                        }
                     }
+
                     if (mutation.target.id === "stats_gold_hour") {
                         battleStats.goldHour = mutation.target.innerText
-                        if (settings.showBattleStats) {
-                            updateBattleStatsUI()
-                        }
+                    }
+
+                    if (settings.showBattleStats && (
+                        mutation.target.id === "stats_kills" ||
+                        mutation.target.id === "stats_deaths" ||
+                        mutation.target.id === "stats_gold" ||
+                        mutation.target.id === "stats_gold_hour")) {
+                        updateBattleStatsUI()
                     }
                 } else {
                     mutation.endEdit()
