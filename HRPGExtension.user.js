@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         HeroesRPG Extension
 // @namespace    https://github.com/dolioz/hrpgext
-// @version      2.0.0-TEST
+// @version      2.0.1
 // @description  Improves UI, does not automate gameplay
 // @downloadURL  https://github.com/Dolioz/hrpgext/raw/master/HRPGExtension.user.js
 // @updateURL    https://github.com/Dolioz/hrpgext/raw/master/HRPGExtension.user.js
@@ -73,7 +73,7 @@ let settings = null, defaultSettings = {
 
     // compact ui
     hideHeader: true,
-    showOnlyT4Skills: true,
+    showOnlyT4Skills: false,
     showBattleStats: true,
     hideStatistics: false,
     showPower: true,
@@ -584,7 +584,7 @@ async function prepareSettings() {
     rightMenu.appendChild(compactUiHeader)
     rightMenu.appendChild(createCheckbox("hideHeader", "Hide game header", "setting", toggleUI))
     rightMenu.appendChild(createCheckbox("showOnlyT4Skills", "Show only T4 battle skills", "setting", toggleUI))
-    rightMenu.appendChild(createCheckbox("showBattleStats", "Show battle stats", "setting", changeClassDisplay.bind(null, 'battlestats', 'showBattleStats', 'table-row')))
+    rightMenu.appendChild(createCheckbox("showBattleStats", "Show compact battle stats", "setting", changeClassDisplay.bind(null, 'battlestats', 'showBattleStats', 'table-row')))
     rightMenu.appendChild(createCheckbox("hideStatistics", "Hide statistics menu", "setting", toggleUI))
     rightMenu.appendChild(createCheckbox("showPower", "Show power and armor", "setting", changeClassDisplay.bind(null, 'power_row', 'showPower', 'table-row')))
     rightMenu.appendChild(createCheckbox("showAttrBonus", "Show attribute bonus", "setting", changeClassDisplay.bind(null, 'attr_bonus', 'showAttrBonus', 'inline-block')))
