@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         HeroesRPG Extension
 // @namespace    https://github.com/dolioz/hrpgext
-// @version      2.0.2
+// @version      2.0.3
 // @description  Improves UI, does not automate gameplay
 // @downloadURL  https://github.com/Dolioz/hrpgext/raw/master/HRPGExtension.user.js
 // @updateURL    https://github.com/Dolioz/hrpgext/raw/master/HRPGExtension.user.js
@@ -38,6 +38,11 @@ let battleStats = {
     winRate: 100.00,
     gold: 0,
     goldHour: 0,
+    strength: 0,
+    dexterity: 0,
+    stamina: 0,
+    totalStats: 0,
+    statsPerKill: 0.00,
 }
 let channels = [], channelBtnContainer, clanChatContainer, clanChat, headerMenuContainer, settingsContainer
 let settings = null, defaultSettings = {
@@ -298,7 +303,7 @@ let settings = null, defaultSettings = {
 
     let battleStatsWinRate = document.createElement('tr')
     battleStatsWinRate.className = "battlestats"
-    battleStatsWinRate.innerHTML = '<td colspan="2" style="text-align: center; font-size: 10px" id="battlestatstext">' + battleStats.kills + '/' + battleStats.deaths + ' (' + battleStats.winRate + '%)</td>'
+    battleStatsWinRate.innerHTML = '<td colspan="2" style="text-align: center; font-size: 10px" id="winratetext">' + battleStats.kills + '/' + battleStats.deaths + ' (' + battleStats.winRate + '%)</td>'
     battleStatsWinRate.style.display = settings.showBattleStats ? 'table-row' : 'none'
     battleStatsTbody.appendChild(battleStatsWinRate)
 
@@ -307,6 +312,12 @@ let settings = null, defaultSettings = {
     battleStatsGold.innerHTML = '<td colspan="2" style="text-align: center; font-size: 10px" id="goldstatstext">' + battleStats.gold + ' (' + battleStats.goldHour + '/hr)</td>'
     battleStatsGold.style.display = settings.showBattleStats ? 'table-row' : 'none'
     battleStatsTbody.appendChild(battleStatsGold)
+
+    let battleStatsStatDrop = document.createElement('tr')
+    battleStatsStatDrop.className = "battlestats"
+    battleStatsStatDrop.innerHTML = '<td colspan="2" style="text-align: center; font-size: 10px" id="statdroptext">' + battleStats.totalStats + ' (' + battleStats.statsPerKill.toFixed(2) + ' wins/stat)</td>'
+    battleStatsStatDrop.style.display = settings.showBattleStats ? 'table-row' : 'none'
+    battleStatsTbody.appendChild(battleStatsStatDrop)
 
     let battleStatsReset = document.createElement('tr')
     battleStatsReset.className = "battlestats"
@@ -466,14 +477,21 @@ let settings = null, defaultSettings = {
                     // Stats section
                     if (mutation.target.id === "stats_kills") {
                         battleStats.kills = mutation.target.innerText
+                        if (battleStats.totalStats > 0) {
+                            battleStats.statsPerKill = parseInt(battleStats.kills) / battleStats.totalStats
+                        }
                     } else if (mutation.target.id === "stats_deaths") {
                         battleStats.deaths = mutation.target.innerText
                     } else if (mutation.target.id === "stats_perc") {
                         battleStats.winRate = mutation.target.innerText
-                    } 
+                    }
 
                     if (settings.showBattleStats && (mutation.target.id === "stats_kills" || mutation.target.id === "stats_deaths" || mutation.target.id === "stats_perc")) {
-                        document.getElementById('battlestatstext').innerText = battleStats.kills + '/' + battleStats.deaths + ' (' + battleStats.winRate + '%)'
+                        document.getElementById('winratetext').innerText = battleStats.kills + '/' + battleStats.deaths + ' (' + battleStats.winRate + '%)'
+
+                        if (settings.showBattleStats) {
+                            document.getElementById('statdroptext').innerText = battleStats.totalStats + ' (' + battleStats.statsPerKill.toFixed(2) + ' wins/stat)'
+                        }
                     }
 
                     if (mutation.target.id === "stats_gold") {
@@ -485,6 +503,23 @@ let settings = null, defaultSettings = {
                     if (settings.showBattleStats && (mutation.target.id === "stats_gold" || mutation.target.id === "stats_gold_hour")) {
                         document.getElementById('goldstatstext').innerText = battleStats.gold + ' (' + battleStats.goldHour + '/hr)'
                     }
+
+                    if (mutation.target.id === "stats_str") {
+                        battleStats.strength = mutation.target.innerText
+                    } else if (mutation.target.id === "stats_dex") {
+                        battleStats.dexterity = mutation.target.innerText
+                    } else if (mutation.target.id === "stats_sta") {
+                        battleStats.stamina = mutation.target.innerText
+                    }
+
+                    if (mutation.target.id === "stats_str" || mutation.target.id === "stats_dex" || mutation.target.id === "stats_sta") {
+                        battleStats.totalStats = parseInt(battleStats.strength) + parseInt(battleStats.dexterity) + parseInt(battleStats.stamina)
+                        battleStats.statsPerKill = parseInt(battleStats.kills) / battleStats.totalStats
+                        if (settings.showBattleStats) {
+                            document.getElementById('statdroptext').innerText = battleStats.totalStats + ' (' + battleStats.statsPerKill.toFixed(2) + ' wins/stat)'
+                        }
+                    }
+
                 } else {
                     mutation.endEdit()
                 }

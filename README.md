@@ -18,6 +18,10 @@ Chrome
 
 ## Changelog
 
+### 2.0.3
+
+- [NEW] show total stats and wins per stat in compact battle stats
+
 ### 2.0.2
 
 - [FIXED] update stats in compact battle stats correctly
@@ -100,8 +104,9 @@ Chrome
 
 - Hide game header (adds the links of the header as separate menu)
 - Show compact battle stats:
-    - Kills/Deaths (Win Rate)
-    - Gold (Gold per hour)
+    - kills/deaths (win rate)
+    - gold (gold per hour)
+    - total stats (wins per stat)
 - Hide statistics menu
 - Show only T4 battle skills
 - Show power and armor in UI (updates when remove/equip gear and when chat command "/stats" is executed)
