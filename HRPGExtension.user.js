@@ -470,18 +470,20 @@ let settings = null, defaultSettings = {
                         battleStats.deaths = mutation.target.innerText
                     } else if (mutation.target.id === "stats_perc") {
                         battleStats.winRate = mutation.target.innerText
-                        if (settings.showBattleStats) {
-                            document.getElementById('battlestatstext').innerText = battleStats.kills + '/' + battleStats.deaths + ' (' + battleStats.winRate + '%)'
-                        }
+                    } 
+
+                    if (settings.showBattleStats && (mutation.target.id === "stats_kills" || mutation.target.id === "stats_deaths" || mutation.target.id === "stats_perc")) {
+                        document.getElementById('battlestatstext').innerText = battleStats.kills + '/' + battleStats.deaths + ' (' + battleStats.winRate + '%)'
                     }
 
                     if (mutation.target.id === "stats_gold") {
                         battleStats.gold = mutation.target.innerText
                     } else if (mutation.target.id === "stats_gold_hour") {
                         battleStats.goldHour = mutation.target.innerText
-                        if (settings.showBattleStats) {
-                            document.getElementById('goldstatstext').innerText = battleStats.gold + ' (' + battleStats.goldHour + '/hr)'
-                        }
+                    }
+
+                    if (settings.showBattleStats && (mutation.target.id === "stats_gold" || mutation.target.id === "stats_gold_hour")) {
+                        document.getElementById('goldstatstext').innerText = battleStats.gold + ' (' + battleStats.goldHour + '/hr)'
                     }
                 } else {
                     mutation.endEdit()
