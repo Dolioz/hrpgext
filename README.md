@@ -18,6 +18,10 @@ Chrome
 
 ## Changelog
 
+### 2.0.2
+
+- [FIXED] update stats in compact battle stats correctly
+
 ### 2.0.1
 
 - [NEW] option to show only T4 battle skills
