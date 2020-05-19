@@ -321,7 +321,7 @@ let settings = null, defaultSettings = {
 
     let battleStatsReset = document.createElement('tr')
     battleStatsReset.className = "battlestats"
-    battleStatsReset.innerHTML = '<td colspan="2" style="text-align: center; font-size: 10px"><a href="javascript:statReset(\'stats_kills|stats_deaths|stats_perc|stats_damage|stats_gold|stats_gold_hour|stats_gold_donated|stats_gold_donated_hour|stats_exp|stats_exp_hour|stats_cp|stats_cp_hour\',0)">[Reset]</a></td>'
+    battleStatsReset.innerHTML = '<td colspan="2" style="text-align: center; font-size: 10px"><a href="javascript:statReset(\'stats_kills|stats_deaths|stats_perc|stats_damage|stats_gold|stats_gold_hour|stats_gold_donated|stats_gold_donated_hour|stats_exp|stats_exp_hour|stats_cp|stats_cp_hour|stats_str|stats_dex|stats_sta\',0)">[Reset]</a></td>'
     battleStatsReset.style.display = settings.showBattleStats ? 'table-row' : 'none'
     battleStatsTbody.appendChild(battleStatsReset)
     document.getElementById('holder-right').insertBefore(battleStatsDiv, document.getElementById('tright'))
@@ -1180,7 +1180,7 @@ function processMainChatRows(chatRows) {
             clone.id = "ct2_tr" + clone.id.substring(6)
             clanChat.insertBefore(clone, clanChat.firstChild)
 
-            // Change message count                        
+            // Change message count
             if (!isFirstChatMutation && unsafeWindow.chatview !== 2) {
                 clone.dataset.unread = "true"
                 let count = document.querySelectorAll("#chat_table2 [data-unread]").length
@@ -1234,7 +1234,7 @@ function processMainChatRows(chatRows) {
                 }
             }
 
-            // Change message count                        
+            // Change message count
             if (!isFirstChatMutation && unsafeWindow.chatview !== 2 && !isMyMessage) {
                 clone.dataset.unread = "true"
                 let count = document.querySelectorAll("#chat_table2 [data-unread]").length
