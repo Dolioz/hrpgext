@@ -478,7 +478,7 @@ let settings = null, defaultSettings = {
                     if (mutation.target.id === "stats_kills") {
                         battleStats.kills = mutation.target.innerText
                         if (battleStats.totalStats > 0) {
-                            battleStats.statsPerKill = parseInt(battleStats.kills) / battleStats.totalStats
+                            battleStats.statsPerKill = battleStats.kills.toInt() / battleStats.totalStats.toInt()
                         }
                     } else if (mutation.target.id === "stats_deaths") {
                         battleStats.deaths = mutation.target.innerText
@@ -513,8 +513,8 @@ let settings = null, defaultSettings = {
                     }
 
                     if (mutation.target.id === "stats_str" || mutation.target.id === "stats_dex" || mutation.target.id === "stats_sta") {
-                        battleStats.totalStats = parseInt(battleStats.strength) + parseInt(battleStats.dexterity) + parseInt(battleStats.stamina)
-                        battleStats.statsPerKill = parseInt(battleStats.kills) / battleStats.totalStats
+                        battleStats.totalStats = battleStats.strength.toInt() + battleStats.dexterity.toInt() + battleStats.stamina.toInt()
+                        battleStats.statsPerKill = battleStats.kills.toInt() / battleStats.totalStats.toInt()
                         if (settings.showBattleStats) {
                             document.getElementById('statdroptext').innerText = battleStats.totalStats + ' (' + battleStats.statsPerKill.toFixed(2) + ' wins/stat)'
                         }
