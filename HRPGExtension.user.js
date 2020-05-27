@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         HeroesRPG Extension
 // @namespace    https://github.com/dolioz/hrpgext
-// @version      2.0.3
+// @version      2.0.4
 // @description  Improves UI, does not automate gameplay
 // @downloadURL  https://github.com/Dolioz/hrpgext/raw/master/HRPGExtension.user.js
 // @updateURL    https://github.com/Dolioz/hrpgext/raw/master/HRPGExtension.user.js
@@ -388,8 +388,8 @@ let settings = null, defaultSettings = {
                     }
 
                     // New log rows
-                    if (mutation.target.id === "chat_table10" || mutation.target.parentNode.id === "chat_table10") {
-                        processLogRows()
+                    if (mutation.target.parentNode.id === "chat_table10") {
+                        processLogRows()                    
                     }
 
                     // When popup opens
@@ -1749,7 +1749,7 @@ function prepareLogChannel() {
     let div = document.createElement('div')
     div.className = "table-style"
     div.style.padding = "2px 2px"
-    div.style.width = "748px"
+    div.style.width = "736px"
     div.style.height = "15px"
     let a = document.createElement('a')
     a.href = "javascript:"
