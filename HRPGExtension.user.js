@@ -75,6 +75,8 @@ let settings = null, defaultSettings = {
     hideFragmentDrops: false,
     hideQuestItemDrops: false,
     hideLevelUps: false,
+    hideRush: false,
+    hideBerserk: false,
 
     // compact ui
     hideHeader: true,
@@ -341,7 +343,7 @@ let settings = null, defaultSettings = {
 
     // Increase chat row limit
     if (settings.increaseChat) {
-        unsafeWindow.chatsize = 1000
+        unsafeWindow.chatsize = 50000
     }
 
     prepareLogChannel()
@@ -604,6 +606,8 @@ async function prepareSettings() {
     middleMenu.appendChild(createCheckbox("hideFragmentDrops", "Hide armor/weapon fragment drops", "setting white", refreshDropVisibility))
     middleMenu.appendChild(createCheckbox("hideQuestItemDrops", "Hide quest item drops", "setting white", refreshDropVisibility))
     middleMenu.appendChild(createCheckbox("hideLevelUps", "Hide level ups", "setting white", refreshDropVisibility))
+    middleMenu.appendChild(createCheckbox("hideRush", "Hide gold and xp rush", "setting white", refreshDropVisibility))
+    middleMenu.appendChild(createCheckbox("hideBerserk", "Hide berserk", "setting white", refreshDropVisibility))
     settingsContainer.appendChild(middleMenu)
 
     let rightMenu = document.createElement('div')
@@ -848,8 +852,7 @@ function processLogRows() {
         if (message.match(/Common|Fractured/)) {
             row.dataset.isCommonDrop = true
             if (settings.hideCommonDrops) {
-                row.style.display = settings.hideCommonDrops ? 'none' : 'table-row'
-                // Exclude low drops from unread count on Log channel tab
+                row.style.display = 'none'
                 unsafeWindow.chatcount10--
                 if (unsafeWindow.chatcount10 < 0) {
                     unsafeWindow.chatcount10 = 0
@@ -862,8 +865,7 @@ function processLogRows() {
         if (message.match(/Uncommon|Chipped/)) {
             row.dataset.isUncommonDrop = true
             if (settings.hideUncommonDrops) {
-                row.style.display = settings.hideUncommonDrops ? 'none' : 'table-row'
-                // Exclude low drops from unread count on Log channel tab
+                row.style.display = 'none'
                 unsafeWindow.chatcount10--
                 if (unsafeWindow.chatcount10 < 0) {
                     unsafeWindow.chatcount10 = 0
@@ -876,8 +878,7 @@ function processLogRows() {
         if (message.match(/Rare/)) {
             row.dataset.isRareDrop = true
             if (settings.hideRareDrops) {
-                row.style.display = settings.hideRareDrops ? 'none' : 'table-row'
-                // Exclude low drops from unread count on Log channel tab
+                row.style.display = 'none'
                 unsafeWindow.chatcount10--
                 if (unsafeWindow.chatcount10 < 0) {
                     unsafeWindow.chatcount10 = 0
@@ -890,8 +891,7 @@ function processLogRows() {
         if (message.match(/You have received .+ Skill Points/)) {
             row.dataset.isSpDrop = true
             if (settings.hideSpDrops) {
-                row.style.display = settings.hideSpDrops ? 'none' : 'table-row'
-                // Exclude low drops from unread count on Log channel tab
+                row.style.display = 'none'
                 unsafeWindow.chatcount10--
                 if (unsafeWindow.chatcount10 < 0) {
                     unsafeWindow.chatcount10 = 0
@@ -904,8 +904,7 @@ function processLogRows() {
         if (message.match(/You have found .+ Fragment/)) {
             row.dataset.isFragmentDrop = true
             if (settings.hideFragmentDrops) {
-                row.style.display = settings.hideFragmentDrops ? 'none' : 'table-row'
-                // Exclude low drops from unread count on Log channel tab
+                row.style.display = 'none'
                 unsafeWindow.chatcount10--
                 if (unsafeWindow.chatcount10 < 0) {
                     unsafeWindow.chatcount10 = 0
@@ -918,8 +917,7 @@ function processLogRows() {
         if (message.match(/Quest Item/)) {
             row.dataset.isQuestItemDrop = true
             if (settings.hideQuestItemDrops) {
-                row.style.display = settings.hideQuestItemDrops ? 'none' : 'table-row'
-                // Exclude low drops from unread count on Log channel tab
+                row.style.display = 'none'
                 unsafeWindow.chatcount10--
                 if (unsafeWindow.chatcount10 < 0) {
                     unsafeWindow.chatcount10 = 0
@@ -932,8 +930,33 @@ function processLogRows() {
         if (message.match(/You have gained a level and rolled/)) {
             row.dataset.isLevelUp = true
             if (settings.hideLevelUps) {
-                row.style.display = settings.hideLevelUps ? 'none' : 'table-row'
-                // Exclude low drops from unread count on Log channel tab
+                row.style.display = 'none'
+                unsafeWindow.chatcount10--
+                if (unsafeWindow.chatcount10 < 0) {
+                    unsafeWindow.chatcount10 = 0
+                }
+                document.getElementById('chatcount10').textContent = (unsafeWindow.chatcount10 !== 0 ? " (" + unsafeWindow.chatcount10 + ")" : "")
+            }
+        }
+
+        // Detect rush
+        if (message.match(/Rush/)) {
+            row.dataset.isRush = true
+            if (settings.hideRush) {
+                row.style.display = 'none'
+                unsafeWindow.chatcount10--
+                if (unsafeWindow.chatcount10 < 0) {
+                    unsafeWindow.chatcount10 = 0
+                }
+                document.getElementById('chatcount10').textContent = (unsafeWindow.chatcount10 !== 0 ? " (" + unsafeWindow.chatcount10 + ")" : "")
+            }
+        }
+
+        // Detect berserk
+        if (message.match(/You go berserk for/)) {
+            row.dataset.isBerserk = true
+            if (settings.hideBerserk) {
+                row.style.display = 'none'
                 unsafeWindow.chatcount10--
                 if (unsafeWindow.chatcount10 < 0) {
                     unsafeWindow.chatcount10 = 0
@@ -1793,6 +1816,12 @@ function refreshDropVisibility() {
         }
         if (row.dataset.isLevelUp) {
             row.style.display = settings.hideLevelUps ? 'none' : 'table-row'
+        }
+        if (row.dataset.isRush) {
+            row.style.display = settings.hideRush ? 'none' : 'table-row'
+        }
+        if (row.dataset.isBerserk) {
+            row.style.display = settings.hideBerserk ? 'none' : 'table-row'
         }
     }
 }

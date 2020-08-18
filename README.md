@@ -21,6 +21,8 @@ Chrome
 ### 2.0.3
 
 - [NEW] show total stats and wins per stat in compact battle stats
+- [NEW] log filter for gold/xp rush
+- [NEW] log filter for berserk
 
 ### 2.0.2
 
@@ -30,7 +32,7 @@ Chrome
 
 - [NEW] option to show only T4 battle skills
 - [NEW] option to show compact battle stats
-- [NEW] optopn to hide statistics menu
+- [NEW] option to hide statistics menu
 - [CHANGED] moved header links to HRPGExt menu
 
 ### 2.0.0
@@ -99,6 +101,8 @@ Chrome
 - Hide armor/weapon fragment drops
 - Hide quest item drops
 - Hide level ups
+- Hide gold/xp rush
+- Hide berserk
 
 ### Compact UI
 
